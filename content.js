@@ -126,10 +126,12 @@ async function clickFirstIncompleteCourse() {
 // =====================================================
 
 async function muteVideo() {
-  // Click the speaker/mute button in the video player
+  // Click the parent button containing the speaker SVG
   const speaker = document.querySelector('#speaker');
   if (speaker) {
-    click(speaker);
+    // Try clicking the parent button first, fallback to SVG itself
+    const btn = speaker.closest('button') || speaker.closest('[role="button"]') || speaker.parentElement;
+    click(btn || speaker);
     await sleep(300);
     sendStatus('已静音', 'running');
     return;
