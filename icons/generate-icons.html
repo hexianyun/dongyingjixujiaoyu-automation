@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Icon Generator</title>
+</head>
+<body>
+  <h1>Click to generate icons</h1>
+  <button onclick="generateIcons()">Generate Icons</button>
+  <div id="output"></div>
+
+  <script>
+    function generateIcons() {
+      const sizes = [16, 48, 128];
+      const output = document.getElementById('output');
+      output.innerHTML = '';
+
+      sizes.forEach(size => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+
+        // Create gradient background
+        const gradient = ctx.createLinearGradient(0, 0, size, size);
+        gradient.addColorStop(0, '#667eea');
+        gradient.addColorStop(1, '#764ba2');
+
+        // Draw rounded rectangle
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.roundRect(0, 0, size, size, size * 0.2);
+        ctx.fill();
+
+        // Draw text
+        ctx.fillStyle = 'white';
+        ctx.font = `bold ${size * 0.6}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('学', size / 2, size / 2);
+
+        // Create download link
+        const link = document.createElement('a');
+        link.download = `icon${size}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.textContent = `Download icon${size}.png`;
+        output.appendChild(link);
+        output.appendChild(document.createElement('br'));
+      });
+    }
+  </script>
+</body>
+</html>

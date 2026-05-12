@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学习助手</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>东营继续教育网</h1>
+    <h2>自动学习助手</h2>
+
+    <p class="hint">请先在网站手动登录，然后点击开始</p>
+
+    <div class="btn-group">
+      <button id="startBtn" class="btn-start">开始自动学习</button>
+      <button id="stopBtn" class="btn-stop" style="display:none;">停止</button>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div id="progress" class="progress-container" style="display: none;">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">0%</div>
+    </div>
+
+    <div class="info">
+      <p>功能说明：</p>
+      <ul>
+        <li>自动播放视频课程</li>
+        <li>自动完成考试</li>
+      </ul>
+      <p class="info-note">使用前请先在网站完成登录</p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
