@@ -210,7 +210,8 @@ async function handlePopupQuestion(attempt) {
   if (!popup || popup.style.display === 'none') return false;
 
   sendStatus('答题弹窗...', 'running');
-  await sleep(1500);
+  // Wait for popup to fully display before answering
+  await sleep(10000);
   const opts = popup.querySelectorAll('.options .option-item');
   if (!opts.length) return false;
 
