@@ -179,9 +179,6 @@ async function playVideos() {
     sendStatus(`播放视频 ${i + 1}/${pending.length}`, 'running');
     click(pending[i]);
     await sleep(2000);
-    // Click play button in the video player
-    const playBtn = document.querySelector('#play');
-    if (playBtn) { click(playBtn); await sleep(500); }
     await waitVideoEnd();
   }
   return true;
@@ -199,6 +196,17 @@ async function waitVideoEnd() {
     if (active) {
       if ((parseFloat(active.querySelector('.badge')?.textContent) || 0) >= 100) return;
       if (active.querySelector('.progress-bar.finish')) return;
+    }
+
+    // Detect and recover from "当前视频源播放失败"
+    const errEl = [...document.querySelectorAll('p, div, span')].find(el => el.textContent.includes('视频源播放失败'));
+    if (errEl) {
+      sendStatus('视频播放失败，尝试恢复...', 'running');
+      await sleep(3000);
+      const video = document.querySelector('video');
+      if (video) { video.load(); video.play().catch(() => {}); }
+      lastTime = 0; stall = 0;
+      continue;
     }
 
     const video = document.querySelector('video');
