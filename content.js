@@ -224,7 +224,22 @@ async function waitVideoEnd() {
   console.log('[Auto] waitVideoEnd: starting');
   let lastTime = 0, stall = 0, qAttempt = 0, muteCheck = 0;
 
-  await ensureVideoPlaying();
+  let ok = await ensureVideoPlaying();
+  // If no video element found after ensureVideoPlaying's 30s wait,
+  // do a few more retries then give up so we don't hang forever
+  if (!ok) {
+    for (let r = 0; r < 5; r++) {
+      await sleep(3000);
+      if (await handlePopupQuestion(0)) break;
+      const v = document.querySelector('video');
+      if (v && v.readyState > 0) { ok = true; break; }
+    }
+    if (!ok) {
+      sendStatus('未检测到视频播放器', 'warning');
+      console.log('[Auto] waitVideoEnd: no video element found, giving up');
+      return;
+    }
+  }
 
   while (true) {
     await sleep(3000);
