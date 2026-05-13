@@ -267,52 +267,71 @@ async function waitVideoEnd() {
 }
 
 async function handlePopupQuestion(attempt) {
-  const popup = document.querySelector('.bplayer-question-wrap');
-  if (!popup || popup.style.display === 'none') return false;
+  try {
+    const popup = document.querySelector('.bplayer-question-wrap');
+    if (!popup || popup.style.display === 'none') return false;
 
-  sendStatus('答题弹窗...', 'running');
-  await sleep(2000);
-  // Filter out empty/placeholder options (e.g. <F> with no content)
-  const allOpts = [...popup.querySelectorAll('.options .option-item')];
-  const opts = allOpts.filter(o => o.querySelector('.option-item-content')?.textContent.trim());
-  if (!opts.length) return false;
+    sendStatus('答题弹窗...', 'running');
+    await sleep(2000);
 
-  // Detect question type from title text: 【判断题】/【单选题】/【多选题】
-  const titleEl = popup.querySelector('.title');
-  const titleText = titleEl ? titleEl.textContent : '';
-  const isMulti = titleText.includes('多选题');
-  console.log(`[Auto] Popup type: ${isMulti ? '多选题' : '单选题/判断题'}, ${opts.length} options, attempt ${attempt}`);
+    // Gather visible options with content, skip empty placeholders
+    const allOpts = [...popup.querySelectorAll('.options .option-item')];
+    const opts = allOpts.filter(o => {
+      const c = o.querySelector('.option-item-content');
+      return c && c.textContent && c.textContent.trim().length > 0;
+    });
+    if (!opts.length) return false;
 
-  if (isMulti) {
-    // 多选题: try selecting all options; if wrong, exclude one at a time
-    if (attempt === 0) {
-      opts.forEach(o => click(o));
-    } else {
-      const excludeIdx = (attempt - 1) % opts.length;
-      opts.forEach((o, i) => { if (i !== excludeIdx) click(o); });
+    // Detect question type from title text: 【判断题】/【单选题】/【多选题】
+    const titleEl = popup.querySelector('.title');
+    const titleText = titleEl ? titleEl.textContent : '';
+    const isMulti = titleText.includes('多选题');
+    console.log(`[Auto] Popup type: ${isMulti ? '多选题' : '单选题/判断题'}, ${opts.length} options, attempt ${attempt}`);
+
+    // Click each option via its content/char element (more reliable than
+    // clicking the wrapper, since Angular handlers may expect a child target)
+    function clickOpt(el) {
+      const target = el.querySelector('.option-item-content') || el.querySelector('.option-char') || el;
+      click(target);
     }
-  } else {
-    // 单选题/判断题: cycle through options one at a time
-    const idx = attempt % opts.length;
-    click(opts[idx]);
-  }
 
-  await sleep(500);
-  const commit = popup.querySelector('.commit.bplayer-btn');
-  if (commit) { click(commit); await sleep(1500); }
+    if (isMulti) {
+      // 多选题: try selecting all options; if wrong, exclude one at a time
+      if (attempt === 0) {
+        opts.forEach(o => clickOpt(o));
+      } else {
+        const excludeIdx = (attempt - 1) % opts.length;
+        opts.forEach((o, i) => { if (i !== excludeIdx) clickOpt(o); });
+      }
+    } else {
+      // 单选题/判断题: cycle through options one at a time
+      const idx = attempt % opts.length;
+      clickOpt(opts[idx]);
+    }
 
-  if (popup.querySelector('.answer-image.correct')) {
-    sendStatus('回答正确', 'info');
+    await sleep(500);
+    const commit = popup.querySelector('.commit.bplayer-btn');
+    if (commit) { click(commit); await sleep(1500); }
+
+    // Check submission result: only treat as correct if the indicator
+    // is actually visible (not just present in hidden DOM)
+    const correctEl = popup.querySelector('.answer-image.correct');
+    if (correctEl && correctEl.offsetParent !== null) {
+      sendStatus('回答正确', 'info');
+      const done = popup.querySelector('.complete.bplayer-btn');
+      if (done) { click(done); await sleep(1000); }
+      return true;
+    }
+
+    sendStatus('回答错误，等待重试...', 'running');
     const done = popup.querySelector('.complete.bplayer-btn');
-    if (done) { click(done); await sleep(1000); }
+    if (done) click(done);
+    await sleep(15000);
     return true;
+  } catch (err) {
+    console.error('[Auto] handlePopupQuestion error:', err);
+    return false;
   }
-
-  sendStatus('回答错误，等待重试...', 'running');
-  const done = popup.querySelector('.complete.bplayer-btn');
-  if (done) click(done);
-  await sleep(15000);
-  return true;
 }
 
 // Navigate back to learning center from course page
