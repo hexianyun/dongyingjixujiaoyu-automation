@@ -289,34 +289,28 @@ async function handlePopupQuestion(attempt) {
     const isMulti = titleText.includes('多选题');
     console.log(`[Auto] Popup type: ${isMulti ? '多选题' : '单选题/判断题'}, ${opts.length} options, attempt ${attempt}`);
 
-    // Click each option via its content/char element (more reliable than
-    // clicking the wrapper, since Angular handlers may expect a child target)
-    function clickOpt(el) {
-      const target = el.querySelector('.option-item-content') || el.querySelector('.option-char') || el;
-      click(target);
-    }
-
     if (isMulti) {
       // 多选题: try selecting all options; if wrong, exclude one at a time
       if (attempt === 0) {
-        opts.forEach(o => clickOpt(o));
+        opts.forEach(o => click(o));
       } else {
         const excludeIdx = (attempt - 1) % opts.length;
-        opts.forEach((o, i) => { if (i !== excludeIdx) clickOpt(o); });
+        opts.forEach((o, i) => { if (i !== excludeIdx) click(o); });
       }
     } else {
       // 单选题/判断题: cycle through options one at a time
       const idx = attempt % opts.length;
-      clickOpt(opts[idx]);
+      click(opts[idx]);
     }
 
     await sleep(500);
     const commit = popup.querySelector('.commit.bplayer-btn');
     if (commit) { click(commit); await sleep(1500); }
 
-    // Check submission result: only treat as correct if the indicator
-    // is actually visible (not just present in hidden DOM)
+    // Check submission result
     const correctEl = popup.querySelector('.answer-image.correct');
+    const isCorrect = correctEl && correctEl.offsetParent !== null;
+    console.log(`[Auto] Submit result: correct=${isCorrect}, el=${!!correctEl}, offsetParent=${correctEl?.offsetParent !== null}`);
     if (correctEl && correctEl.offsetParent !== null) {
       sendStatus('回答正确', 'info');
       const done = popup.querySelector('.complete.bplayer-btn');
