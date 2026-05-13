@@ -110,7 +110,7 @@ async function findFirstIncompleteCourse() {
 
   const left = courses.filter(c => !c.done);
   if (!left.length) {
-    sendStatus('所有课程已完成', 'success');
+    sendStatus('所有课程已完成', 'info');
     sendProgress(50, '课程完成');
     return null; // All done
   }
@@ -168,7 +168,7 @@ async function playVideos() {
   });
 
   if (!pending.length) {
-    sendStatus('所有视频已完成', 'success');
+    sendStatus('所有视频已完成', 'info');
     return true;
   }
 
@@ -246,7 +246,7 @@ async function handlePopupQuestion(attempt) {
   if (commit) { click(commit); await sleep(1500); }
 
   if (popup.querySelector('.answer-image.correct')) {
-    sendStatus('回答正确', 'success');
+    sendStatus('回答正确', 'info');
     const done = popup.querySelector('.complete.bplayer-btn');
     if (done) { click(done); await sleep(1000); }
     return true;
@@ -328,7 +328,7 @@ async function answerExam() {
     sendStatus('提交答案中...', 'running');
     click(sub);
     await sleep(3000);
-    sendStatus('提交完成', 'success');
+    sendStatus('提交完成', 'info');
   } else {
     sendStatus('未找到提交按钮', 'warning');
   }

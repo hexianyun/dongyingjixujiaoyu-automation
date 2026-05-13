@@ -64,11 +64,16 @@ document.addEventListener('DOMContentLoaded', function() {
   function updateStatus(text, statusType) {
     statusDiv.textContent = text;
     statusDiv.className = 'status ' + statusType;
+    // Only reset UI on final success (全部任务完成) or error
     if (statusType === 'success' || statusType === 'error') {
       resetUI();
+      if (statusType === 'success') {
+        chrome.storage.local.remove(['autoStep']);
+      }
+      return;
     }
     // Refresh counts after course/exam status changes
-    if (statusType === 'success' || statusType === 'error') {
+    if (statusType === 'info') {
       setTimeout(refreshCounts, 2000);
     }
   }
