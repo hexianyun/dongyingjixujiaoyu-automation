@@ -60,8 +60,22 @@ function waitForEl(selector, timeout = 15000) {
 
 function click(el) {
   if (!el) return;
+  el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, cancelable: true }));
+  el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, cancelable: true }));
+  el.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true }));
+  el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+  el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
   el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
   if (typeof el.onclick === 'function') el.onclick();
+}
+
+function hoverVideoPlayer() {
+  const player = document.querySelector('.bplayer, .bplayer-wrap, .bplayer-box, .video-player, .prism-player, video') || document.querySelector('video')?.parentElement;
+  if (!player) return false;
+  player.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, cancelable: true }));
+  player.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, cancelable: true }));
+  player.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true, clientX: 20, clientY: 20 }));
+  return true;
 }
 
 // =====================================================
@@ -144,6 +158,7 @@ async function muteVideo() {
   const videoKey = v ? (v.currentSrc || v.src || 'video') : null;
   const speaker = document.querySelector('#speaker');
   if (speaker && videoKey && videoKey !== lastUIMutedVideoKey) {
+    hoverVideoPlayer();
     const btn = speaker.closest('button') || speaker.closest('[role="button"]') || speaker.parentElement;
     click(btn || speaker);
     await sleep(300);
@@ -161,6 +176,7 @@ async function muteVideo() {
 
   const muteBtn = document.querySelector('.volume-icon, .mute-btn, .player-mute, [class*="volume"], [class*="mute"]');
   if (muteBtn && videoKey && videoKey !== lastUIMutedVideoKey) {
+    hoverVideoPlayer();
     click(muteBtn);
     await sleep(300);
     const currentVideo = document.querySelector('video');
@@ -220,6 +236,7 @@ async function ensureVideoPlaying() {
     const playBtn = document.querySelector('#play');
     const popup = document.querySelector('.bplayer-question-wrap');
     const popupVisible = !!(popup && window.getComputedStyle(popup).display !== 'none');
+    hoverVideoPlayer();
     console.log(`[Auto] ensureVideoPlaying retry=${retry} video=${!!video} readyState=${video?.readyState ?? 'n/a'} playBtn=${!!playBtn} popupVisible=${popupVisible}`);
 
     if (video || playBtn) {
@@ -260,6 +277,7 @@ async function ensureVideoPlaying() {
     }
     const playBtn = document.querySelector('#play');
     await muteVideo();
+    hoverVideoPlayer();
     console.log(`[Auto] ensureVideoPlaying play retry=${retry} paused=${video.paused} currentTime=${video.currentTime} playBtn=${!!playBtn}`);
     if (playBtn) click(playBtn);
     await video.play().catch(err => console.log('[Auto] video.play failed:', err?.message || err));
