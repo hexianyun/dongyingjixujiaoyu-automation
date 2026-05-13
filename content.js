@@ -11,6 +11,7 @@ const STEP = {
 };
 
 let isRunning = false;
+let lastUIMutedVideoKey = null;
 
 // =====================================================
 // State persistence
@@ -135,30 +136,41 @@ async function muteVideo() {
   const v = document.querySelector('video');
   if (v) {
     v.muted = true;
+    v.defaultMuted = true;
     v.volume = 0;
+    try { v.setAttribute('muted', 'muted'); } catch (e) {}
   }
 
+  const videoKey = v ? (v.currentSrc || v.src || 'video') : null;
   const speaker = document.querySelector('#speaker');
-  if (speaker) {
+  if (speaker && videoKey && videoKey !== lastUIMutedVideoKey) {
     const btn = speaker.closest('button') || speaker.closest('[role="button"]') || speaker.parentElement;
     click(btn || speaker);
     await sleep(300);
-    if (v) {
-      v.muted = true;
-      v.volume = 0;
+    const currentVideo = document.querySelector('video');
+    if (currentVideo) {
+      currentVideo.muted = true;
+      currentVideo.defaultMuted = true;
+      currentVideo.volume = 0;
+      try { currentVideo.setAttribute('muted', 'muted'); } catch (e) {}
     }
+    lastUIMutedVideoKey = videoKey;
     sendStatus('已静音', 'running');
     return true;
   }
 
   const muteBtn = document.querySelector('.volume-icon, .mute-btn, .player-mute, [class*="volume"], [class*="mute"]');
-  if (muteBtn) {
+  if (muteBtn && videoKey && videoKey !== lastUIMutedVideoKey) {
     click(muteBtn);
     await sleep(300);
-    if (v) {
-      v.muted = true;
-      v.volume = 0;
+    const currentVideo = document.querySelector('video');
+    if (currentVideo) {
+      currentVideo.muted = true;
+      currentVideo.defaultMuted = true;
+      currentVideo.volume = 0;
+      try { currentVideo.setAttribute('muted', 'muted'); } catch (e) {}
     }
+    lastUIMutedVideoKey = videoKey;
     sendStatus('已静音', 'running');
     return true;
   }
@@ -272,6 +284,7 @@ async function waitVideoEnd() {
       if (popupHandled) {
         qAttempt++;
         console.log(`[Auto] waitVideoEnd: handled popup during video wait retry=${r}`);
+        await muteVideo();
       }
       const popup = document.querySelector('.bplayer-question-wrap');
       const popupVisible = !!(popup && window.getComputedStyle(popup).display !== 'none');
@@ -293,9 +306,13 @@ async function waitVideoEnd() {
   while (true) {
     await sleep(3000);
     const popupHandled = await handlePopupQuestion(qAttempt);
-    if (popupHandled) { qAttempt++; continue; }
+    if (popupHandled) {
+      qAttempt++;
+      await muteVideo();
+      continue;
+    }
     // Re-mute periodically (popup question may unmute video)
-    if (++muteCheck % 2 === 0) muteVideo();
+    if (++muteCheck % 2 === 0) await muteVideo();
 
     const active = document.querySelector('li.videoLi.active');
     if (active) {
@@ -353,29 +370,61 @@ async function handlePopupQuestion(attempt) {
     const isMulti = titleText.includes('多选题');
     console.log(`[Auto] Popup type: ${isMulti ? '多选题' : '单选题/判断题'}, ${opts.length} options, attempt ${attempt}`);
 
+    function isSelected(o) {
+      return o.classList.contains('active') || o.classList.contains('selected') || o.classList.contains('checked') || o.getAttribute('aria-checked') === 'true';
+    }
+
     function isVisible(el) {
       return !!el && window.getComputedStyle(el).display !== 'none' && window.getComputedStyle(el).visibility !== 'hidden';
     }
 
     function clearSelectedOptions() {
       opts.forEach(o => {
-        const selected = o.classList.contains('active') || o.classList.contains('selected') || o.classList.contains('checked') || o.getAttribute('aria-checked') === 'true';
-        if (selected) click(o);
+        if (isSelected(o)) click(o);
       });
     }
 
-    clearSelectedOptions();
+    async function ensureOptionSelected(o, wantSelected) {
+      for (let j = 0; j < 3; j++) {
+        if (isSelected(o) === wantSelected) return true;
+        click(o);
+        await sleep(120);
+      }
+      return isSelected(o) === wantSelected;
+    }
+
+    async function selectOption(o) {
+      const ok = await ensureOptionSelected(o, true);
+      if (!ok) console.log('[Auto] option select may have failed');
+      return ok;
+    }
+
+    async function clearSelectionsReliably() {
+      clearSelectedOptions();
+      await sleep(200);
+      for (const o of opts) {
+        const selected = o.classList.contains('active') || o.classList.contains('selected') || o.classList.contains('checked') || o.getAttribute('aria-checked') === 'true';
+        if (selected) {
+          const ok = await ensureOptionSelected(o, false);
+          if (!ok) console.log('[Auto] option clear may have failed');
+        }
+      }
+    }
+
+    await clearSelectionsReliably();
     await sleep(200);
 
     if (isMulti) {
-      // 按 prd.md 的顺序，逐步增加选择数量：先选第1个，再前2个，再前3个...
       const count = Math.min((attempt % opts.length) + 1, opts.length);
-      opts.slice(0, count).forEach(o => click(o));
+      for (const o of opts.slice(0, count)) {
+        const ok = await selectOption(o);
+        console.log(`[Auto] Multi option selected=${ok} text=${o.querySelector('.option-item-content')?.textContent.trim()}`);
+      }
       console.log(`[Auto] Multi select count=${count}`);
     } else {
       const idx = attempt % opts.length;
-      click(opts[idx]);
-      console.log(`[Auto] Single select idx=${idx}`);
+      const ok = await selectOption(opts[idx]);
+      console.log(`[Auto] Single select idx=${idx} selected=${ok}`);
     }
 
     await sleep(500);
