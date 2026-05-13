@@ -252,7 +252,7 @@ async function waitVideoEnd() {
     // IMPORTANT: check element exists first — null?.style.display gives undefined,
     // and undefined !== 'none' is always true, causing infinite loop.
     const curPopup = document.querySelector('.bplayer-question-wrap');
-    if (curPopup && curPopup.style.display !== 'none') continue;
+    if (curPopup && window.getComputedStyle(curPopup).display !== 'none') continue;
 
     const video = document.querySelector('video');
     if (video) {
@@ -269,7 +269,8 @@ async function waitVideoEnd() {
 async function handlePopupQuestion(attempt) {
   try {
     const popup = document.querySelector('.bplayer-question-wrap');
-    if (!popup || popup.style.display === 'none') return false;
+    // Use getComputedStyle to check effective display (handles CSS class hiding)
+    if (!popup || window.getComputedStyle(popup).display === 'none') return false;
 
     sendStatus('答题弹窗...', 'running');
     await sleep(2000);
