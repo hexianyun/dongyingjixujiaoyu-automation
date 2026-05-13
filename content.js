@@ -219,7 +219,8 @@ async function waitVideoEnd() {
 
   while (true) {
     await sleep(3000);
-    if (await handlePopupQuestion(qAttempt)) qAttempt++;
+    const popupHandled = await handlePopupQuestion(qAttempt);
+    if (popupHandled) { qAttempt++; continue; }
     // Re-mute periodically (popup question may unmute video)
     if (++muteCheck % 2 === 0) muteVideo();
 
@@ -240,6 +241,10 @@ async function waitVideoEnd() {
       continue;
     }
 
+    // Check for popup again before deciding to exit (video might have ended
+    // while popup was showing, and a new popup could be for the next step)
+    if (document.querySelector('.bplayer-question-wrap')?.style.display !== 'none') continue;
+
     const video = document.querySelector('video');
     if (video) {
       if (video.ended) return;
@@ -258,13 +263,16 @@ async function handlePopupQuestion(attempt) {
 
   sendStatus('答题弹窗...', 'running');
   await sleep(2000);
-  const opts = popup.querySelectorAll('.options .option-item');
+  // Filter out empty/placeholder options (e.g. <F> with no content)
+  const allOpts = [...popup.querySelectorAll('.options .option-item')];
+  const opts = allOpts.filter(o => o.querySelector('.option-item-content')?.textContent.trim());
   if (!opts.length) return false;
 
   // Detect question type from title text: 【判断题】/【单选题】/【多选题】
   const titleEl = popup.querySelector('.title');
   const titleText = titleEl ? titleEl.textContent : '';
   const isMulti = titleText.includes('多选题');
+  console.log(`[Auto] Popup type: ${isMulti ? '多选题' : '单选题/判断题'}, ${opts.length} options, attempt ${attempt}`);
 
   if (isMulti) {
     // 多选题: try selecting all options; if wrong, exclude one at a time
