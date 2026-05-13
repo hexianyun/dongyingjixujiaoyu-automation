@@ -450,11 +450,24 @@ async function run(step) {
 // =====================================================
 
 (async function init() {
-  // Cache course/exam counts if visible on this page
-  const studyEl = document.querySelector('span[du-html="studyingNum"]');
-  if (studyEl) chrome.storage.local.set({ cachedStudyingCount: parseInt(studyEl.textContent) || 0 });
-  const examEl = document.querySelector('span[du-html="waitExamNum"]');
-  if (examEl) chrome.storage.local.set({ cachedExamCount: parseInt(examEl.textContent) || 0 });
+  // Cache course/exam counts (retry after delay for AngularJS rendering)
+  async function cacheCounts() {
+    // Try Angular selector first, then text fallback
+    let studyEl = document.querySelector('span[du-html="studyingNum"]');
+    if (studyEl) await chrome.storage.local.set({ cachedStudyingCount: parseInt(studyEl.textContent) || 0 });
+    else {
+      const m = document.body.textContent.match(/正在学习[（(]\s*(\d+)\s*[）)]/);
+      if (m) await chrome.storage.local.set({ cachedStudyingCount: parseInt(m[1]) });
+    }
+    let examEl = document.querySelector('span[du-html="waitExamNum"]');
+    if (examEl) await chrome.storage.local.set({ cachedExamCount: parseInt(examEl.textContent) || 0 });
+    else {
+      const m = document.body.textContent.match(/待参加考试[（(]\s*(\d+)\s*[）)]/);
+      if (m) await chrome.storage.local.set({ cachedExamCount: parseInt(m[1]) });
+    }
+  }
+  await cacheCounts();
+  setTimeout(cacheCounts, 3000); // Retry after AngularJS renders
 
   if (isRunning) return;
   await sleep(1200);
@@ -495,16 +508,28 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === 'getExamCount') {
+    let count = -1;
     const el = document.querySelector('span[du-html="waitExamNum"]');
-    const count = el ? parseInt(el.textContent) || 0 : -1;
+    if (el) { count = parseInt(el.textContent) || 0; }
+    else {
+      // Fallback: extract number from "待参加考试（N）" text
+      const m = document.body.textContent.match(/待参加考试[（(]\s*(\d+)\s*[）)]/);
+      if (m) count = parseInt(m[1]);
+    }
     if (count >= 0) chrome.storage.local.set({ cachedExamCount: count });
     sendResponse({ count });
     return;
   }
 
   if (msg.type === 'getStudyingCount') {
+    let count = -1;
     const el = document.querySelector('span[du-html="studyingNum"]');
-    const count = el ? parseInt(el.textContent) || 0 : -1;
+    if (el) { count = parseInt(el.textContent) || 0; }
+    else {
+      // Fallback: extract number from "正在学习（N）" text
+      const m = document.body.textContent.match(/正在学习[（(]\s*(\d+)\s*[）)]/);
+      if (m) count = parseInt(m[1]);
+    }
     if (count >= 0) chrome.storage.local.set({ cachedStudyingCount: count });
     sendResponse({ count });
     return;
