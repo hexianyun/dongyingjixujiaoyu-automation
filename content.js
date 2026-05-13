@@ -456,6 +456,20 @@ async function run(step) {
         // Save next state BEFORE clicking — page navigates immediately after click
         await saveStep(STEP.INSIDE_COURSE);
         click(link);
+        // Course link uses AngularJS SPA (href="javascript:void(0)"),
+        // so page may NOT reload. Wait for course content to appear.
+        try {
+          await waitForEl('li.videoLi', 15000);
+          // SPA navigation succeeded — play videos directly
+          sendStatus('进入课程页面，开始播放视频...', 'running');
+          sendProgress(25, '视频播放中');
+          await playVideos();
+          sendProgress(60, '视频播放完成');
+          await saveStep(STEP.PROCESS_COURSES);
+          await goBackToLearningCenter();
+        } catch (e) {
+          // Full reload or timeout — init() handles via storage
+        }
         return;
       }
       // All courses done, move to exams
