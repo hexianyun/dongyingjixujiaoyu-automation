@@ -287,13 +287,11 @@ async function waitVideoEnd() {
 async function handlePopupQuestion(attempt) {
   try {
     const popup = document.querySelector('.bplayer-question-wrap');
-    // Use getComputedStyle to check effective display (handles CSS class hiding)
     if (!popup || window.getComputedStyle(popup).display === 'none') return false;
 
     sendStatus('答题弹窗...', 'running');
     await sleep(2000);
 
-    // Gather visible options with content, skip empty placeholders
     const allOpts = [...popup.querySelectorAll('.options .option-item')];
     const opts = allOpts.filter(o => {
       const c = o.querySelector('.option-item-content');
@@ -301,44 +299,72 @@ async function handlePopupQuestion(attempt) {
     });
     if (!opts.length) return false;
 
-    // Detect question type from title text: 【判断题】/【单选题】/【多选题】
     const titleEl = popup.querySelector('.title');
     const titleText = titleEl ? titleEl.textContent : '';
     const isMulti = titleText.includes('多选题');
     console.log(`[Auto] Popup type: ${isMulti ? '多选题' : '单选题/判断题'}, ${opts.length} options, attempt ${attempt}`);
 
+    function isVisible(el) {
+      return !!el && window.getComputedStyle(el).display !== 'none' && window.getComputedStyle(el).visibility !== 'hidden';
+    }
+
+    function clearSelectedOptions() {
+      opts.forEach(o => {
+        const selected = o.classList.contains('active') || o.classList.contains('selected') || o.classList.contains('checked') || o.getAttribute('aria-checked') === 'true';
+        if (selected) click(o);
+      });
+    }
+
+    clearSelectedOptions();
+    await sleep(200);
+
     if (isMulti) {
-      // 多选题: try selecting all options; if wrong, exclude one at a time
-      if (attempt === 0) {
-        opts.forEach(o => click(o));
-      } else {
-        const excludeIdx = (attempt - 1) % opts.length;
-        opts.forEach((o, i) => { if (i !== excludeIdx) click(o); });
-      }
+      // 按 prd.md 的顺序，逐步增加选择数量：先选第1个，再前2个，再前3个...
+      const count = Math.min((attempt % opts.length) + 1, opts.length);
+      opts.slice(0, count).forEach(o => click(o));
+      console.log(`[Auto] Multi select count=${count}`);
     } else {
-      // 单选题/判断题: cycle through options one at a time
       const idx = attempt % opts.length;
       click(opts[idx]);
+      console.log(`[Auto] Single select idx=${idx}`);
     }
 
     await sleep(500);
     const commit = popup.querySelector('.commit.bplayer-btn');
-    if (commit) { click(commit); await sleep(1500); }
+    if (!commit) {
+      console.log('[Auto] No commit button found');
+      return false;
+    }
+    click(commit);
 
-    // Check submission result
-    const correctEl = popup.querySelector('.answer-image.correct');
-    const isCorrect = correctEl && correctEl.offsetParent !== null;
-    console.log(`[Auto] Submit result: correct=${isCorrect}, el=${!!correctEl}, offsetParent=${correctEl?.offsetParent !== null}`);
-    if (correctEl && correctEl.offsetParent !== null) {
-      sendStatus('回答正确', 'info');
-      const done = popup.querySelector('.complete.bplayer-btn');
-      if (done) { click(done); await sleep(1000); }
-      return true;
+    let resultVisible = false;
+    for (let i = 0; i < 10; i++) {
+      await sleep(500);
+      const resultWrap = popup.querySelector('.result');
+      const completeBtn = popup.querySelector('.complete.bplayer-btn');
+      const correctEl = popup.querySelector('.answer-image.correct');
+      const wrongTime = popup.querySelector('.wrong-time');
+      const correctVisible = isVisible(correctEl);
+      const completeVisible = isVisible(completeBtn);
+      const wrongVisible = !!(wrongTime && wrongTime.textContent.trim());
+      if (correctVisible || completeVisible || wrongVisible) {
+        resultVisible = true;
+        console.log(`[Auto] Result visible: correct=${correctVisible}, complete=${completeVisible}, wrong=${wrongVisible}, resultWrap=${isVisible(resultWrap)}`);
+        if (correctVisible) {
+          sendStatus('回答正确', 'info');
+          if (completeBtn) {
+            click(completeBtn);
+            await sleep(1000);
+          }
+          return true;
+        }
+        break;
+      }
     }
 
-    sendStatus('回答错误，等待重试...', 'running');
+    sendStatus(resultVisible ? '回答错误，等待重试...' : '提交后未检测到结果，等待重试...', 'running');
     const done = popup.querySelector('.complete.bplayer-btn');
-    if (done) click(done);
+    if (done && isVisible(done)) click(done);
     await sleep(15000);
     return true;
   } catch (err) {
