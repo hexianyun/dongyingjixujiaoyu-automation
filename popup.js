@@ -44,9 +44,6 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (message.type === 'progress') {
       updateProgress(message.value, message.text);
     }
-    if (message.type === 'status') {
-      setTimeout(refreshCounts, 2000);
-    }
   });
 
   function setRunningUI() {
@@ -69,9 +66,10 @@ document.addEventListener('DOMContentLoaded', function() {
     statusDiv.className = 'status ' + statusType;
     if (statusType === 'success' || statusType === 'error') {
       resetUI();
-      if (statusType === 'success') {
-        chrome.storage.local.remove(['autoStep']);
-      }
+    }
+    // Refresh counts after course/exam status changes
+    if (statusType === 'success' || statusType === 'error') {
+      setTimeout(refreshCounts, 2000);
     }
   }
 
