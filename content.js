@@ -488,6 +488,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'getExamCount') {
+    const el = document.querySelector('span[du-html="pendingexam"]');
+    const count = el ? parseInt(el.textContent) || 0 : -1;
+    sendResponse({ count });
+    return;
+  }
+
   if (msg.type === 'getStatus') {
     loadState().then(s => sendResponse({ isRunning, step: s.autoStep || 0 }));
     return true;

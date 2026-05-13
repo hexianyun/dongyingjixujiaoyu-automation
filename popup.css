@@ -167,6 +167,31 @@ h2 {
   margin-top: 5px;
 }
 
+.exam-info {
+  margin-top: 15px;
+  text-align: center;
+  color: #fff;
+  font-size: 14px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+}
+
+.exam-label {
+  opacity: 0.85;
+}
+
+.exam-count {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0 4px;
+  color: #ffd700;
+}
+
+.exam-unit {
+  opacity: 0.85;
+}
+
 .hint {
   color: rgba(255, 255, 255, 0.85);
   font-size: 12px;

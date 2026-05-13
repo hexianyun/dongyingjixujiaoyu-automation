@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const progressContainer = document.getElementById('progress');
   const progressFill = document.getElementById('progressFill');
   const progressText = document.getElementById('progressText');
+  const examCountEl = document.getElementById('examCount');
 
   // Check if automation is already running
   chrome.storage.local.get(['autoStep'], function(result) {
@@ -13,12 +14,34 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // Query pending exam count from content script
+  function refreshExamCount() {
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      if (!tabs[0] || !tabs[0].url || !tabs[0].url.includes('sddy.gxk.yxlearning.com')) {
+        examCountEl.textContent = '--';
+        return;
+      }
+      chrome.tabs.sendMessage(tabs[0].id, { type: 'getExamCount' }, function(resp) {
+        if (chrome.runtime.lastError || !resp || resp.count < 0) {
+          examCountEl.textContent = '--';
+        } else {
+          examCountEl.textContent = resp.count;
+        }
+      });
+    });
+  }
+
+  refreshExamCount();
+
   // Listen for status from content script
   chrome.runtime.onMessage.addListener(function(message) {
     if (message.type === 'status') {
       updateStatus(message.text, message.status);
     } else if (message.type === 'progress') {
       updateProgress(message.value, message.text);
+    }
+    if (message.type === 'status' && (message.text.includes('考试') || message.text.includes('全部完成'))) {
+      setTimeout(refreshExamCount, 2000);
     }
   });
 
