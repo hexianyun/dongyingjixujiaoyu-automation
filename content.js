@@ -248,8 +248,11 @@ async function waitVideoEnd() {
     }
 
     // Check for popup again before deciding to exit (video might have ended
-    // while popup was showing, and a new popup could be for the next step)
-    if (document.querySelector('.bplayer-question-wrap')?.style.display !== 'none') continue;
+    // while popup was showing, and a new popup could be for the next step).
+    // IMPORTANT: check element exists first — null?.style.display gives undefined,
+    // and undefined !== 'none' is always true, causing infinite loop.
+    const curPopup = document.querySelector('.bplayer-question-wrap');
+    if (curPopup && curPopup.style.display !== 'none') continue;
 
     const video = document.querySelector('video');
     if (video) {
