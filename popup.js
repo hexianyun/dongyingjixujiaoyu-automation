@@ -95,15 +95,29 @@ document.addEventListener('DOMContentLoaded', function() {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
       if (tab && tab.url && tab.url.includes('sddy.gxk.yxlearning.com')) {
-        // Check if content script is alive
-        chrome.tabs.sendMessage(tab.id, { type: 'ping' }, function(pong) {
-          if (chrome.runtime.lastError) {
-            updateStatus('插件未注入，请刷新页面后重试', 'error');
-            resetUI();
-            return;
-          }
-          chrome.tabs.sendMessage(tab.id, { type: 'start' });
-        });
+        // Check if content script is alive (retry with injection)
+        function pingAndStart(retries) {
+          chrome.tabs.sendMessage(tab.id, { type: 'ping' }, function(pong) {
+            if (chrome.runtime.lastError && retries > 0) {
+              chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                files: ['content.js']
+              }).then(() => {
+                setTimeout(() => pingAndStart(retries - 1), 1200);
+              }).catch(() => {
+                setTimeout(() => pingAndStart(retries - 1), 1200);
+              });
+              return;
+            }
+            if (chrome.runtime.lastError) {
+              updateStatus('插件未注入，请刷新页面后重试', 'error');
+              resetUI();
+              return;
+            }
+            chrome.tabs.sendMessage(tab.id, { type: 'start' });
+          });
+        }
+        pingAndStart(3);
       } else {
         const newTab = await chrome.tabs.create({
           url: 'http://sddy.gxk.yxlearning.com/index'
