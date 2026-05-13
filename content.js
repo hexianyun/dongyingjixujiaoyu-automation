@@ -154,6 +154,7 @@ async function muteVideo() {
 }
 
 async function playVideos() {
+  console.log('[Auto] playVideos: starting');
   await sleep(2000);
   await muteVideo();
   let items = document.querySelectorAll('li.videoLi');
@@ -189,6 +190,7 @@ async function playVideos() {
 
 // Ensure video element exists and is actively playing (retry up to ~30s)
 async function ensureVideoPlaying() {
+  console.log('[Auto] ensureVideoPlaying: looking for video');
   // Wait for video element to appear in DOM
   let video = document.querySelector('video');
   for (let retry = 0; retry < 15; retry++) {
@@ -219,6 +221,7 @@ async function ensureVideoPlaying() {
 }
 
 async function waitVideoEnd() {
+  console.log('[Auto] waitVideoEnd: starting');
   let lastTime = 0, stall = 0, qAttempt = 0, muteCheck = 0;
 
   await ensureVideoPlaying();
