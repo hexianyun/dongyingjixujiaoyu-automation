@@ -92,8 +92,8 @@ async function getCourses() {
   return courses;
 }
 
-// Click into the first incomplete course on the learning center page
-async function clickFirstIncompleteCourse() {
+// Find the first incomplete course (without clicking)
+async function findFirstIncompleteCourse() {
   sendStatus('检查课程进度...', 'running');
 
   // Wait for course list to load (retry up to 15s)
@@ -119,14 +119,12 @@ async function clickFirstIncompleteCourse() {
   sendStatus(`进入课程: ${c.title}`, 'running');
   sendProgress(20, `${c.title} (${done + 1}/${total})`);
 
-  // Click the course card — this navigates to the course video page
   const link = c.element.querySelector('a[du-click="courseck"]');
   if (!link) {
     sendStatus('未找到课程入口链接', 'error');
     return null;
   }
-  click(link);
-  return c.title;
+  return link;
 }
 
 // =====================================================
@@ -412,10 +410,11 @@ async function run(step) {
 
     // === PROCESS COURSES (on /my/learning page) ===
     if (step <= STEP.PROCESS_COURSES) {
-      const courseTitle = await clickFirstIncompleteCourse();
-      if (courseTitle) {
-        // Page will navigate to course — save INSIDE_COURSE for the next load
+      const link = await findFirstIncompleteCourse();
+      if (link) {
+        // Save next state BEFORE clicking — page navigates immediately after click
         await saveStep(STEP.INSIDE_COURSE);
+        click(link);
         return;
       }
       // All courses done, move to exams
