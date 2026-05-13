@@ -178,8 +178,35 @@ async function playVideos() {
     sendProgress(30 + (i / pending.length) * 30, `视频 ${i + 1}/${pending.length} (${pct}%)`);
     sendStatus(`播放视频 ${i + 1}/${pending.length}`, 'running');
     click(pending[i]);
-    await sleep(2000);
+    await ensureVideoPlaying();
     await waitVideoEnd();
+  }
+  return true;
+}
+
+// Ensure video element exists and is actively playing (retry up to ~30s)
+async function ensureVideoPlaying() {
+  // Wait for video element to appear in DOM
+  let video = document.querySelector('video');
+  for (let retry = 0; retry < 15; retry++) {
+    if (video && video.readyState > 0) break;
+    await sleep(2000);
+    video = document.querySelector('video');
+  }
+  if (!video) { sendStatus('未找到视频元素', 'warning'); return false; }
+
+  // Try to start playback and confirm currentTime advances
+  let lastCheck = video.currentTime;
+  for (let retry = 0; retry < 10; retry++) {
+    if (video.ended) break;
+    // Check if already playing (currentTime advancing)
+    if (!video.paused && video.currentTime > 0 && video.currentTime !== lastCheck) break;
+    // Click play button in player UI
+    const playBtn = document.querySelector('#play');
+    if (playBtn) click(playBtn);
+    await video.play().catch(() => {});
+    lastCheck = video.currentTime;
+    await sleep(2000);
   }
   return true;
 }
@@ -187,23 +214,7 @@ async function playVideos() {
 async function waitVideoEnd() {
   let lastTime = 0, stall = 0, qAttempt = 0, muteCheck = 0;
 
-  // Wait for video element and ensure it starts playing
-  let video = document.querySelector('video');
-  for (let retry = 0; retry < 10 && !video; retry++) {
-    await sleep(2000);
-    video = document.querySelector('video');
-  }
-  if (!video) { sendStatus('未找到视频元素', 'warning'); return; }
-
-  // Try to start playback
-  for (let retry = 0; retry < 5; retry++) {
-    if (!video.paused && video.currentTime > 0) break;
-    // Click play button in player as backup
-    const playBtn = document.querySelector('#play');
-    if (playBtn) click(playBtn);
-    await video.play().catch(() => {});
-    await sleep(1000);
-  }
+  await ensureVideoPlaying();
 
   while (true) {
     await sleep(3000);
