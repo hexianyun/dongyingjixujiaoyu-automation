@@ -178,7 +178,7 @@ async function playVideos() {
     sendProgress(30 + (i / pending.length) * 30, `视频 ${i + 1}/${pending.length} (${pct}%)`);
     sendStatus(`播放视频 ${i + 1}/${pending.length}`, 'running');
     click(pending[i]);
-    await ensureVideoPlaying();
+    await sleep(2000);
     await waitVideoEnd();
   }
   return true;
@@ -198,7 +198,8 @@ async function ensureVideoPlaying() {
   // Try to start playback and confirm currentTime advances
   let lastCheck = video.currentTime;
   for (let retry = 0; retry < 10; retry++) {
-    if (video.ended) break;
+    // If video ended from previous source, reload it
+    if (video.ended) { video.load(); await sleep(1000); }
     // Check if already playing (currentTime advancing)
     if (!video.paused && video.currentTime > 0 && video.currentTime !== lastCheck) break;
     // Click play button in player UI
