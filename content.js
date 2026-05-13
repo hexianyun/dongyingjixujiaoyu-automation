@@ -188,10 +188,12 @@ async function playVideos() {
 }
 
 async function waitVideoEnd() {
-  let lastTime = 0, stall = 0, qAttempt = 0;
+  let lastTime = 0, stall = 0, qAttempt = 0, muteCheck = 0;
   while (true) {
     await sleep(3000);
     if (await handlePopupQuestion(qAttempt)) qAttempt++;
+    // Re-mute periodically (popup question may unmute video)
+    if (++muteCheck % 2 === 0) muteVideo();
 
     const active = document.querySelector('li.videoLi.active');
     if (active) {
