@@ -127,6 +127,29 @@ function tryClickPlayButton() {
   return false;
 }
 
+function simulateClickPlayArea() {
+  const playerArea = document.querySelector('.bplayer-wrap, .pv-video-player, .player-container, .bplayer, .video-player') || document.querySelector('video')?.parentElement;
+  if (!playerArea || !isVisible(playerArea)) return false;
+  return click(playerArea), true;
+}
+
+function simulateSpacebarPress() {
+  const video = getMainVideo() || document.querySelector('video');
+  if (video && typeof video.focus === 'function') {
+    try { video.focus(); } catch (e) {}
+  }
+  const down = new KeyboardEvent('keydown', {
+    key: ' ', code: 'Space', keyCode: 32, which: 32,
+    bubbles: true, cancelable: true, composed: true
+  });
+  const up = new KeyboardEvent('keyup', {
+    key: ' ', code: 'Space', keyCode: 32, which: 32,
+    bubbles: true, cancelable: true, composed: true
+  });
+  document.dispatchEvent(down);
+  setTimeout(() => document.dispatchEvent(up), 50);
+}
+
 // =====================================================
 // Course List Processing (on /my/learning page)
 // =====================================================
@@ -205,7 +228,14 @@ async function muteVideo() {
   const videoKey = v ? (v.currentSrc || v.src || 'video') : null;
   if (!videoKey) return !!v;
 
-  const speaker = document.querySelector('#speaker');
+  const unspeaker = document.getElementById('unspeaker');
+  if (unspeaker && isVisible(unspeaker)) {
+    lastUIMutedVideoKey = videoKey;
+    sendStatus('已静音', 'running');
+    return true;
+  }
+
+  const speaker = document.getElementById('speaker');
   if (speaker && videoKey !== lastUIMutedVideoKey) {
     hoverVideoPlayer();
     const btn = speaker.closest('button') || speaker.closest('[role="button"]') || speaker.parentElement;
@@ -288,6 +318,7 @@ async function ensureVideoPlaying() {
       await muteVideo();
       forceMuteVideo(video);
       if (video.readyState >= 2 && !video.ended) {
+        simulateClickPlayArea();
         await video.play().catch(err => console.log('[Auto] early video.play failed:', err?.message || err));
       }
     }
@@ -319,11 +350,17 @@ async function ensureVideoPlaying() {
     await muteVideo();
     forceMuteVideo(video);
     console.log(`[Auto] ensureVideoPlaying play retry=${retry} paused=${video.paused} currentTime=${video.currentTime} muted=${video.muted} volume=${video.volume}`);
+    simulateClickPlayArea();
     await video.play().catch(err => console.log('[Auto] video.play failed:', err?.message || err));
-    if ((video.paused || video.currentTime === lastCheck) && tryClickPlayButton()) {
-      await sleep(300);
-      forceMuteVideo(video);
-      await video.play().catch(() => {});
+    if (video.paused || video.currentTime === lastCheck) {
+      if (tryClickPlayButton()) {
+        await sleep(300);
+        forceMuteVideo(video);
+        await video.play().catch(() => {});
+      }
+      if (video.paused || video.currentTime === lastCheck) {
+        simulateSpacebarPress();
+      }
     }
     lastCheck = video.currentTime;
     await sleep(1000);
@@ -408,15 +445,23 @@ async function waitVideoEnd() {
       if (video.ended) return;
       if (video.paused) {
         forceMuteVideo(video);
+        simulateClickPlayArea();
         await video.play().catch(() => {});
-        if (video.paused) tryClickPlayButton();
+        if (video.paused) {
+          tryClickPlayButton();
+          simulateSpacebarPress();
+        }
       }
       if (video.currentTime === lastTime && video.currentTime > 0) {
         stall++;
         if (stall >= 4) {
           forceMuteVideo(video);
+          simulateClickPlayArea();
           await video.play().catch(() => {});
-          if (video.paused) tryClickPlayButton();
+          if (video.paused) {
+            tryClickPlayButton();
+            simulateSpacebarPress();
+          }
           stall = 0;
         }
       } else { stall = 0; lastTime = video.currentTime; }
