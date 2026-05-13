@@ -489,7 +489,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === 'getExamCount') {
-    const el = document.querySelector('span[du-html="pendingexam"]');
+    const el = document.querySelector('span[du-html="waitExamNum"]');
     const count = el ? parseInt(el.textContent) || 0 : -1;
     sendResponse({ count });
     return;
