@@ -495,6 +495,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return;
   }
 
+  if (msg.type === 'getStudyingCount') {
+    const el = document.querySelector('span[du-html="studyingNum"]');
+    const count = el ? parseInt(el.textContent) || 0 : -1;
+    sendResponse({ count });
+    return;
+  }
+
   if (msg.type === 'getStatus') {
     loadState().then(s => sendResponse({ isRunning, step: s.autoStep || 0 }));
     return true;

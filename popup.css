@@ -169,27 +169,44 @@ h2 {
 
 .exam-info {
   margin-top: 15px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
   color: #fff;
   font-size: 14px;
-  padding: 10px;
+  padding: 12px 10px;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 8px;
 }
 
-.exam-label {
-  opacity: 0.85;
+.info-item {
+  text-align: center;
+  flex: 1;
 }
 
-.exam-count {
+.info-divider {
+  width: 1px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.info-label {
+  display: block;
+  font-size: 12px;
+  opacity: 0.85;
+  margin-bottom: 2px;
+}
+
+.info-count {
   font-size: 24px;
   font-weight: bold;
-  margin: 0 4px;
   color: #ffd700;
 }
 
-.exam-unit {
+.info-unit {
+  font-size: 12px;
   opacity: 0.85;
+  margin-left: 2px;
 }
 
 .hint {

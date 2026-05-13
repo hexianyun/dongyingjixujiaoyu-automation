@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const progressFill = document.getElementById('progressFill');
   const progressText = document.getElementById('progressText');
   const examCountEl = document.getElementById('examCount');
+  const studyingCountEl = document.getElementById('studyingCount');
 
   // Check if automation is already running
   chrome.storage.local.get(['autoStep'], function(result) {
@@ -14,24 +15,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Query pending exam count from content script
-  function refreshExamCount() {
+  // Query counts from content script
+  function refreshCounts() {
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
       if (!tabs[0] || !tabs[0].url || !tabs[0].url.includes('sddy.gxk.yxlearning.com')) {
         examCountEl.textContent = '--';
+        studyingCountEl.textContent = '--';
         return;
       }
       chrome.tabs.sendMessage(tabs[0].id, { type: 'getExamCount' }, function(resp) {
-        if (chrome.runtime.lastError || !resp || resp.count < 0) {
-          examCountEl.textContent = '--';
-        } else {
-          examCountEl.textContent = resp.count;
-        }
+        examCountEl.textContent = (!chrome.runtime.lastError && resp && resp.count >= 0) ? resp.count : '--';
+      });
+      chrome.tabs.sendMessage(tabs[0].id, { type: 'getStudyingCount' }, function(resp) {
+        studyingCountEl.textContent = (!chrome.runtime.lastError && resp && resp.count >= 0) ? resp.count : '--';
       });
     });
   }
 
-  refreshExamCount();
+  refreshCounts();
 
   // Listen for status from content script
   chrome.runtime.onMessage.addListener(function(message) {
@@ -40,8 +41,8 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (message.type === 'progress') {
       updateProgress(message.value, message.text);
     }
-    if (message.type === 'status' && (message.text.includes('考试') || message.text.includes('全部完成'))) {
-      setTimeout(refreshExamCount, 2000);
+    if (message.type === 'status') {
+      setTimeout(refreshCounts, 2000);
     }
   });
 
