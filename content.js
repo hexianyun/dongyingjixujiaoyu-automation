@@ -186,6 +186,25 @@ async function playVideos() {
 
 async function waitVideoEnd() {
   let lastTime = 0, stall = 0, qAttempt = 0, muteCheck = 0;
+
+  // Wait for video element and ensure it starts playing
+  let video = document.querySelector('video');
+  for (let retry = 0; retry < 10 && !video; retry++) {
+    await sleep(2000);
+    video = document.querySelector('video');
+  }
+  if (!video) { sendStatus('未找到视频元素', 'warning'); return; }
+
+  // Try to start playback
+  for (let retry = 0; retry < 5; retry++) {
+    if (!video.paused && video.currentTime > 0) break;
+    // Click play button in player as backup
+    const playBtn = document.querySelector('#play');
+    if (playBtn) click(playBtn);
+    await video.play().catch(() => {});
+    await sleep(1000);
+  }
+
   while (true) {
     await sleep(3000);
     if (await handlePopupQuestion(qAttempt)) qAttempt++;
