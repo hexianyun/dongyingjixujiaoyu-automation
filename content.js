@@ -132,31 +132,42 @@ async function findFirstIncompleteCourse() {
 // =====================================================
 
 async function muteVideo() {
-  // Direct mute via video.muted (bypasses browser autoplay restriction)
   const v = document.querySelector('video');
-  if (v) v.muted = true;
+  if (v) {
+    v.muted = true;
+    v.volume = 0;
+  }
 
-  // Also click the UI mute button (speaker SVG parent)
   const speaker = document.querySelector('#speaker');
   if (speaker) {
     const btn = speaker.closest('button') || speaker.closest('[role="button"]') || speaker.parentElement;
     click(btn || speaker);
     await sleep(300);
+    if (v) {
+      v.muted = true;
+      v.volume = 0;
+    }
     sendStatus('已静音', 'running');
-    return;
+    return true;
   }
-  // Fallback: look for a mute button by common selectors
+
   const muteBtn = document.querySelector('.volume-icon, .mute-btn, .player-mute, [class*="volume"], [class*="mute"]');
   if (muteBtn) {
     click(muteBtn);
     await sleep(300);
+    if (v) {
+      v.muted = true;
+      v.volume = 0;
+    }
+    sendStatus('已静音', 'running');
+    return true;
   }
+
+  return !!v;
 }
 
 async function playVideos() {
   console.log('[Auto] playVideos: starting');
-  await sleep(2000);
-  await muteVideo();
   let items = document.querySelectorAll('li.videoLi');
   if (!items.length) {
     try { await waitForEl('li.videoLi', 8000); items = document.querySelectorAll('li.videoLi'); }
@@ -191,7 +202,7 @@ async function playVideos() {
 // Ensure video element exists and is actively playing (retry up to ~30s)
 async function ensureVideoPlaying() {
   console.log('[Auto] ensureVideoPlaying: looking for video');
-  // Wait for video element to appear in DOM, but keep checking popup state too
+  // Prefer muting/starting as soon as player controls or video appear
   let video = document.querySelector('video');
   for (let retry = 0; retry < 15; retry++) {
     const playBtn = document.querySelector('#play');
@@ -199,12 +210,24 @@ async function ensureVideoPlaying() {
     const popupVisible = !!(popup && window.getComputedStyle(popup).display !== 'none');
     console.log(`[Auto] ensureVideoPlaying retry=${retry} video=${!!video} readyState=${video?.readyState ?? 'n/a'} playBtn=${!!playBtn} popupVisible=${popupVisible}`);
 
+    if (video || playBtn) {
+      await muteVideo();
+    }
+    if (playBtn) {
+      click(playBtn);
+    }
+    if (video) {
+      video.muted = true;
+      video.volume = 0;
+      await video.play().catch(err => console.log('[Auto] early video.play failed:', err?.message || err));
+    }
+
     if (popupVisible) {
       console.log('[Auto] ensureVideoPlaying: popup visible before video ready');
       return false;
     }
     if (video && video.readyState > 0) break;
-    await sleep(2000);
+    await sleep(1000);
     video = document.querySelector('video');
   }
   if (!video) {
@@ -214,6 +237,7 @@ async function ensureVideoPlaying() {
   }
 
   video.muted = true;
+  video.volume = 0;
 
   let lastCheck = video.currentTime;
   for (let retry = 0; retry < 10; retry++) {
@@ -223,11 +247,12 @@ async function ensureVideoPlaying() {
       break;
     }
     const playBtn = document.querySelector('#play');
+    await muteVideo();
     console.log(`[Auto] ensureVideoPlaying play retry=${retry} paused=${video.paused} currentTime=${video.currentTime} playBtn=${!!playBtn}`);
     if (playBtn) click(playBtn);
     await video.play().catch(err => console.log('[Auto] video.play failed:', err?.message || err));
     lastCheck = video.currentTime;
-    await sleep(2000);
+    await sleep(1000);
     video = document.querySelector('video') || video;
   }
   return true;
