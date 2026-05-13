@@ -132,10 +132,13 @@ async function findFirstIncompleteCourse() {
 // =====================================================
 
 async function muteVideo() {
-  // Click the parent button containing the speaker SVG
+  // Direct mute via video.muted (bypasses browser autoplay restriction)
+  const v = document.querySelector('video');
+  if (v) v.muted = true;
+
+  // Also click the UI mute button (speaker SVG parent)
   const speaker = document.querySelector('#speaker');
   if (speaker) {
-    // Try clicking the parent button first, fallback to SVG itself
     const btn = speaker.closest('button') || speaker.closest('[role="button"]') || speaker.parentElement;
     click(btn || speaker);
     await sleep(300);
@@ -195,6 +198,9 @@ async function ensureVideoPlaying() {
   }
   if (!video) { sendStatus('未找到视频元素', 'warning'); return false; }
 
+  // Mute video directly to allow autoplay (Chrome blocks unmuted autoplay)
+  video.muted = true;
+
   // Try to start playback and confirm currentTime advances
   let lastCheck = video.currentTime;
   for (let retry = 0; retry < 10; retry++) {
@@ -236,7 +242,7 @@ async function waitVideoEnd() {
       sendStatus('视频播放失败，尝试恢复...', 'running');
       await sleep(3000);
       const video = document.querySelector('video');
-      if (video) { video.load(); video.play().catch(() => {}); }
+      if (video) { video.muted = true; video.load(); video.play().catch(() => {}); }
       lastTime = 0; stall = 0;
       continue;
     }
@@ -248,10 +254,10 @@ async function waitVideoEnd() {
     const video = document.querySelector('video');
     if (video) {
       if (video.ended) return;
-      if (video.paused) video.play().catch(() => {});
+      if (video.paused) { video.muted = true; video.play().catch(() => {}); }
       if (video.currentTime === lastTime && video.currentTime > 0) {
         stall++;
-        if (stall >= 4) { video.play().catch(() => {}); stall = 0; }
+        if (stall >= 4) { video.muted = true; video.play().catch(() => {}); stall = 0; }
       } else { stall = 0; lastTime = video.currentTime; }
     }
   }
