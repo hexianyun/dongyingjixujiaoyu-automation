@@ -95,7 +95,15 @@ async function getCourses() {
 // Click into the first incomplete course on the learning center page
 async function clickFirstIncompleteCourse() {
   sendStatus('检查课程进度...', 'running');
-  const courses = await getCourses();
+
+  // Wait for course list to load (retry up to 15s)
+  let courses;
+  for (let retry = 0; retry < 10; retry++) {
+    courses = await getCourses();
+    if (courses.length > 0) break;
+    await sleep(1500);
+  }
+
   const total = courses.length;
   let done = courses.filter(c => c.done).length;
   sendProgress(20, `已完成 ${done}/${total} 门`);
@@ -237,15 +245,7 @@ async function handlePopupQuestion(attempt) {
 // Navigate back to learning center from course page
 async function goBackToLearningCenter() {
   sendStatus('返回学习中心...', 'running');
-  const back = document.querySelector('.backindex, .back, .glyphicon-arrow-left');
-  if (back) {
-    click(back);
-  } else {
-    window.history.back();
-  }
-  await sleep(3000);
-  // Reload to get fresh progress data
-  window.location.reload();
+  window.location.href = window.location.origin + '/my/learning';
 }
 
 // =====================================================
