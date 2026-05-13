@@ -97,6 +97,15 @@ function getMainVideo() {
   return videos.sort((a, b) => (b.duration || 0) - (a.duration || 0))[0];
 }
 
+function forceMuteVideo(video) {
+  if (!video) return false;
+  video.muted = true;
+  video.defaultMuted = true;
+  video.volume = 0;
+  try { video.setAttribute('muted', 'muted'); } catch (e) {}
+  return video.muted === true;
+}
+
 function tryClickPlayButton() {
   hoverVideoPlayer();
   const play = document.getElementById('play');
@@ -189,10 +198,8 @@ async function findFirstIncompleteCourse() {
 async function muteVideo() {
   const v = getMainVideo() || document.querySelector('video');
   if (v) {
-    v.muted = true;
-    v.defaultMuted = true;
-    v.volume = 0;
-    try { v.setAttribute('muted', 'muted'); } catch (e) {}
+    forceMuteVideo(v);
+    console.log(`[Auto] muteVideo: property-muted=${v.muted} volume=${v.volume}`);
   }
 
   const videoKey = v ? (v.currentSrc || v.src || 'video') : null;
@@ -207,10 +214,8 @@ async function muteVideo() {
       await sleep(300);
       const currentVideo = getMainVideo() || document.querySelector('video');
       if (currentVideo) {
-        currentVideo.muted = true;
-        currentVideo.defaultMuted = true;
-        currentVideo.volume = 0;
-        try { currentVideo.setAttribute('muted', 'muted'); } catch (e) {}
+        forceMuteVideo(currentVideo);
+        console.log(`[Auto] muteVideo: ui-muted=${currentVideo.muted} volume=${currentVideo.volume}`);
       }
       lastUIMutedVideoKey = videoKey;
       sendStatus('已静音', 'running');
@@ -225,10 +230,8 @@ async function muteVideo() {
     await sleep(300);
     const currentVideo = getMainVideo() || document.querySelector('video');
     if (currentVideo) {
-      currentVideo.muted = true;
-      currentVideo.defaultMuted = true;
-      currentVideo.volume = 0;
-      try { currentVideo.setAttribute('muted', 'muted'); } catch (e) {}
+      forceMuteVideo(currentVideo);
+      console.log(`[Auto] muteVideo: alt-ui-muted=${currentVideo.muted} volume=${currentVideo.volume}`);
     }
     lastUIMutedVideoKey = videoKey;
     sendStatus('已静音', 'running');
@@ -283,6 +286,7 @@ async function ensureVideoPlaying() {
 
     if (video) {
       await muteVideo();
+      forceMuteVideo(video);
       if (video.readyState >= 2 && !video.ended) {
         await video.play().catch(err => console.log('[Auto] early video.play failed:', err?.message || err));
       }
@@ -303,6 +307,7 @@ async function ensureVideoPlaying() {
   }
 
   await muteVideo();
+  forceMuteVideo(video);
 
   let lastCheck = video.currentTime;
   for (let retry = 0; retry < 10; retry++) {
@@ -312,10 +317,12 @@ async function ensureVideoPlaying() {
       break;
     }
     await muteVideo();
-    console.log(`[Auto] ensureVideoPlaying play retry=${retry} paused=${video.paused} currentTime=${video.currentTime}`);
+    forceMuteVideo(video);
+    console.log(`[Auto] ensureVideoPlaying play retry=${retry} paused=${video.paused} currentTime=${video.currentTime} muted=${video.muted} volume=${video.volume}`);
     await video.play().catch(err => console.log('[Auto] video.play failed:', err?.message || err));
     if ((video.paused || video.currentTime === lastCheck) && tryClickPlayButton()) {
       await sleep(300);
+      forceMuteVideo(video);
       await video.play().catch(() => {});
     }
     lastCheck = video.currentTime;
@@ -381,7 +388,10 @@ async function waitVideoEnd() {
       sendStatus('视频播放失败，尝试恢复...', 'running');
       await sleep(3000);
       const video = getMainVideo() || document.querySelector('video');
-      if (video) { video.muted = true; video.load(); video.play().catch(() => {}); }
+      if (video) {
+        forceMuteVideo(video);
+        video.play().catch(() => {});
+      }
       lastTime = 0; stall = 0;
       continue;
     }
@@ -396,10 +406,19 @@ async function waitVideoEnd() {
     const video = getMainVideo() || document.querySelector('video');
     if (video) {
       if (video.ended) return;
-      if (video.paused) { video.muted = true; video.play().catch(() => {}); }
+      if (video.paused) {
+        forceMuteVideo(video);
+        await video.play().catch(() => {});
+        if (video.paused) tryClickPlayButton();
+      }
       if (video.currentTime === lastTime && video.currentTime > 0) {
         stall++;
-        if (stall >= 4) { video.muted = true; video.play().catch(() => {}); stall = 0; }
+        if (stall >= 4) {
+          forceMuteVideo(video);
+          await video.play().catch(() => {});
+          if (video.paused) tryClickPlayButton();
+          stall = 0;
+        }
       } else { stall = 0; lastTime = video.currentTime; }
     }
   }
