@@ -191,31 +191,44 @@ async function playVideos() {
 // Ensure video element exists and is actively playing (retry up to ~30s)
 async function ensureVideoPlaying() {
   console.log('[Auto] ensureVideoPlaying: looking for video');
-  // Wait for video element to appear in DOM
+  // Wait for video element to appear in DOM, but keep checking popup state too
   let video = document.querySelector('video');
   for (let retry = 0; retry < 15; retry++) {
+    const playBtn = document.querySelector('#play');
+    const popup = document.querySelector('.bplayer-question-wrap');
+    const popupVisible = !!(popup && window.getComputedStyle(popup).display !== 'none');
+    console.log(`[Auto] ensureVideoPlaying retry=${retry} video=${!!video} readyState=${video?.readyState ?? 'n/a'} playBtn=${!!playBtn} popupVisible=${popupVisible}`);
+
+    if (popupVisible) {
+      console.log('[Auto] ensureVideoPlaying: popup visible before video ready');
+      return false;
+    }
     if (video && video.readyState > 0) break;
     await sleep(2000);
     video = document.querySelector('video');
   }
-  if (!video) { sendStatus('未找到视频元素', 'warning'); return false; }
+  if (!video) {
+    console.log('[Auto] ensureVideoPlaying: video not found after retries');
+    sendStatus('未找到视频元素', 'warning');
+    return false;
+  }
 
-  // Mute video directly to allow autoplay (Chrome blocks unmuted autoplay)
   video.muted = true;
 
-  // Try to start playback and confirm currentTime advances
   let lastCheck = video.currentTime;
   for (let retry = 0; retry < 10; retry++) {
-    // If video ended from previous source, reload it
     if (video.ended) { video.load(); await sleep(1000); }
-    // Check if already playing (currentTime advancing)
-    if (!video.paused && video.currentTime > 0 && video.currentTime !== lastCheck) break;
-    // Click play button in player UI
+    if (!video.paused && video.currentTime > 0 && video.currentTime !== lastCheck) {
+      console.log(`[Auto] ensureVideoPlaying: playing confirmed retry=${retry} currentTime=${video.currentTime}`);
+      break;
+    }
     const playBtn = document.querySelector('#play');
+    console.log(`[Auto] ensureVideoPlaying play retry=${retry} paused=${video.paused} currentTime=${video.currentTime} playBtn=${!!playBtn}`);
     if (playBtn) click(playBtn);
-    await video.play().catch(() => {});
+    await video.play().catch(err => console.log('[Auto] video.play failed:', err?.message || err));
     lastCheck = video.currentTime;
     await sleep(2000);
+    video = document.querySelector('video') || video;
   }
   return true;
 }
@@ -225,14 +238,25 @@ async function waitVideoEnd() {
   let lastTime = 0, stall = 0, qAttempt = 0, muteCheck = 0;
 
   let ok = await ensureVideoPlaying();
-  // If no video element found after ensureVideoPlaying's 30s wait,
-  // do a few more retries then give up so we don't hang forever
+  // If no video element is ready yet, keep polling both popup and video.
+  // This avoids blocking popup handling behind player initialization.
   if (!ok) {
-    for (let r = 0; r < 5; r++) {
-      await sleep(3000);
-      if (await handlePopupQuestion(0)) break;
+    for (let r = 0; r < 10; r++) {
+      await sleep(2000);
+      const popupHandled = await handlePopupQuestion(qAttempt);
+      if (popupHandled) {
+        qAttempt++;
+        console.log(`[Auto] waitVideoEnd: handled popup during video wait retry=${r}`);
+      }
+      const popup = document.querySelector('.bplayer-question-wrap');
+      const popupVisible = !!(popup && window.getComputedStyle(popup).display !== 'none');
       const v = document.querySelector('video');
-      if (v && v.readyState > 0) { ok = true; break; }
+      const playBtn = document.querySelector('#play');
+      console.log(`[Auto] waitVideoEnd preloop retry=${r} video=${!!v} readyState=${v?.readyState ?? 'n/a'} playBtn=${!!playBtn} popupVisible=${popupVisible}`);
+      if (v && v.readyState > 0) {
+        ok = true;
+        break;
+      }
     }
     if (!ok) {
       sendStatus('未检测到视频播放器', 'warning');
