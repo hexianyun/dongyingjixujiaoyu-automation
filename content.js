@@ -78,6 +78,46 @@ function hoverVideoPlayer() {
   return true;
 }
 
+function isVisible(el) {
+  if (!el) return false;
+  const rect = el.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return false;
+  let cur = el;
+  for (let i = 0; i < 20 && cur; i++) {
+    const cs = window.getComputedStyle(cur);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
+    cur = cur.parentElement;
+  }
+  return true;
+}
+
+function getMainVideo() {
+  const videos = [...document.querySelectorAll('video')].filter(v => isFinite(v.duration) ? v.duration >= 60 : true);
+  if (!videos.length) return document.querySelector('video');
+  return videos.sort((a, b) => (b.duration || 0) - (a.duration || 0))[0];
+}
+
+function tryClickPlayButton() {
+  hoverVideoPlayer();
+  const play = document.getElementById('play');
+  const stop = document.getElementById('stop');
+  if (play && isVisible(play) && (!stop || !isVisible(stop))) {
+    click(play);
+    return true;
+  }
+  const pv = document.querySelector('.pv-playpause.pv-icon-btn-play');
+  if (pv && isVisible(pv)) {
+    click(pv);
+    return true;
+  }
+  const bp = document.querySelector('.bplayer-playpause.bplayer-btn-play');
+  if (bp && isVisible(bp)) {
+    click(bp);
+    return true;
+  }
+  return false;
+}
+
 // =====================================================
 // Course List Processing (on /my/learning page)
 // =====================================================
@@ -147,7 +187,7 @@ async function findFirstIncompleteCourse() {
 // =====================================================
 
 async function muteVideo() {
-  const v = document.querySelector('video');
+  const v = getMainVideo() || document.querySelector('video');
   if (v) {
     v.muted = true;
     v.defaultMuted = true;
@@ -156,30 +196,34 @@ async function muteVideo() {
   }
 
   const videoKey = v ? (v.currentSrc || v.src || 'video') : null;
+  if (!videoKey) return !!v;
+
   const speaker = document.querySelector('#speaker');
-  if (speaker && videoKey && videoKey !== lastUIMutedVideoKey) {
+  if (speaker && videoKey !== lastUIMutedVideoKey) {
     hoverVideoPlayer();
     const btn = speaker.closest('button') || speaker.closest('[role="button"]') || speaker.parentElement;
-    click(btn || speaker);
-    await sleep(300);
-    const currentVideo = document.querySelector('video');
-    if (currentVideo) {
-      currentVideo.muted = true;
-      currentVideo.defaultMuted = true;
-      currentVideo.volume = 0;
-      try { currentVideo.setAttribute('muted', 'muted'); } catch (e) {}
+    if (btn && isVisible(btn)) {
+      click(btn);
+      await sleep(300);
+      const currentVideo = getMainVideo() || document.querySelector('video');
+      if (currentVideo) {
+        currentVideo.muted = true;
+        currentVideo.defaultMuted = true;
+        currentVideo.volume = 0;
+        try { currentVideo.setAttribute('muted', 'muted'); } catch (e) {}
+      }
+      lastUIMutedVideoKey = videoKey;
+      sendStatus('已静音', 'running');
+      return true;
     }
-    lastUIMutedVideoKey = videoKey;
-    sendStatus('已静音', 'running');
-    return true;
   }
 
   const muteBtn = document.querySelector('.volume-icon, .mute-btn, .player-mute, [class*="volume"], [class*="mute"]');
-  if (muteBtn && videoKey && videoKey !== lastUIMutedVideoKey) {
+  if (muteBtn && videoKey !== lastUIMutedVideoKey && isVisible(muteBtn)) {
     hoverVideoPlayer();
     click(muteBtn);
     await sleep(300);
-    const currentVideo = document.querySelector('video');
+    const currentVideo = getMainVideo() || document.querySelector('video');
     if (currentVideo) {
       currentVideo.muted = true;
       currentVideo.defaultMuted = true;
@@ -230,34 +274,27 @@ async function playVideos() {
 // Ensure video element exists and is actively playing (retry up to ~30s)
 async function ensureVideoPlaying() {
   console.log('[Auto] ensureVideoPlaying: looking for video');
-  // Prefer muting/starting as soon as player controls or video appear
-  let video = document.querySelector('video');
+  let video = getMainVideo() || document.querySelector('video');
   for (let retry = 0; retry < 15; retry++) {
-    const playBtn = document.querySelector('#play');
     const popup = document.querySelector('.bplayer-question-wrap');
     const popupVisible = !!(popup && window.getComputedStyle(popup).display !== 'none');
     hoverVideoPlayer();
-    console.log(`[Auto] ensureVideoPlaying retry=${retry} video=${!!video} readyState=${video?.readyState ?? 'n/a'} playBtn=${!!playBtn} popupVisible=${popupVisible}`);
+    console.log(`[Auto] ensureVideoPlaying retry=${retry} video=${!!video} readyState=${video?.readyState ?? 'n/a'} paused=${video?.paused ?? 'n/a'} popupVisible=${popupVisible}`);
 
-    if (video || playBtn) {
-      await muteVideo();
-    }
-    if (playBtn) {
-      click(playBtn);
-    }
     if (video) {
-      video.muted = true;
-      video.volume = 0;
-      await video.play().catch(err => console.log('[Auto] early video.play failed:', err?.message || err));
+      await muteVideo();
+      if (video.readyState >= 2 && !video.ended) {
+        await video.play().catch(err => console.log('[Auto] early video.play failed:', err?.message || err));
+      }
     }
 
     if (popupVisible) {
       console.log('[Auto] ensureVideoPlaying: popup visible before video ready');
       return false;
     }
-    if (video && video.readyState > 0) break;
+    if (video && video.readyState >= 2) break;
     await sleep(1000);
-    video = document.querySelector('video');
+    video = getMainVideo() || document.querySelector('video');
   }
   if (!video) {
     console.log('[Auto] ensureVideoPlaying: video not found after retries');
@@ -265,8 +302,7 @@ async function ensureVideoPlaying() {
     return false;
   }
 
-  video.muted = true;
-  video.volume = 0;
+  await muteVideo();
 
   let lastCheck = video.currentTime;
   for (let retry = 0; retry < 10; retry++) {
@@ -275,15 +311,16 @@ async function ensureVideoPlaying() {
       console.log(`[Auto] ensureVideoPlaying: playing confirmed retry=${retry} currentTime=${video.currentTime}`);
       break;
     }
-    const playBtn = document.querySelector('#play');
     await muteVideo();
-    hoverVideoPlayer();
-    console.log(`[Auto] ensureVideoPlaying play retry=${retry} paused=${video.paused} currentTime=${video.currentTime} playBtn=${!!playBtn}`);
-    if (playBtn) click(playBtn);
+    console.log(`[Auto] ensureVideoPlaying play retry=${retry} paused=${video.paused} currentTime=${video.currentTime}`);
     await video.play().catch(err => console.log('[Auto] video.play failed:', err?.message || err));
+    if ((video.paused || video.currentTime === lastCheck) && tryClickPlayButton()) {
+      await sleep(300);
+      await video.play().catch(() => {});
+    }
     lastCheck = video.currentTime;
     await sleep(1000);
-    video = document.querySelector('video') || video;
+    video = getMainVideo() || document.querySelector('video') || video;
   }
   return true;
 }
@@ -306,7 +343,7 @@ async function waitVideoEnd() {
       }
       const popup = document.querySelector('.bplayer-question-wrap');
       const popupVisible = !!(popup && window.getComputedStyle(popup).display !== 'none');
-      const v = document.querySelector('video');
+      const v = getMainVideo() || document.querySelector('video');
       const playBtn = document.querySelector('#play');
       console.log(`[Auto] waitVideoEnd preloop retry=${r} video=${!!v} readyState=${v?.readyState ?? 'n/a'} playBtn=${!!playBtn} popupVisible=${popupVisible}`);
       if (v && v.readyState > 0) {
@@ -343,7 +380,7 @@ async function waitVideoEnd() {
     if (errEl) {
       sendStatus('视频播放失败，尝试恢复...', 'running');
       await sleep(3000);
-      const video = document.querySelector('video');
+      const video = getMainVideo() || document.querySelector('video');
       if (video) { video.muted = true; video.load(); video.play().catch(() => {}); }
       lastTime = 0; stall = 0;
       continue;
@@ -356,7 +393,7 @@ async function waitVideoEnd() {
     const curPopup = document.querySelector('.bplayer-question-wrap');
     if (curPopup && window.getComputedStyle(curPopup).display !== 'none') continue;
 
-    const video = document.querySelector('video');
+    const video = getMainVideo() || document.querySelector('video');
     if (video) {
       if (video.ended) return;
       if (video.paused) { video.muted = true; video.play().catch(() => {}); }
