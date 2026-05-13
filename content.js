@@ -450,6 +450,12 @@ async function run(step) {
 // =====================================================
 
 (async function init() {
+  // Cache course/exam counts if visible on this page
+  const studyEl = document.querySelector('span[du-html="studyingNum"]');
+  if (studyEl) chrome.storage.local.set({ cachedStudyingCount: parseInt(studyEl.textContent) || 0 });
+  const examEl = document.querySelector('span[du-html="waitExamNum"]');
+  if (examEl) chrome.storage.local.set({ cachedExamCount: parseInt(examEl.textContent) || 0 });
+
   if (isRunning) return;
   await sleep(1200);
   const state = await loadState();
@@ -491,6 +497,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'getExamCount') {
     const el = document.querySelector('span[du-html="waitExamNum"]');
     const count = el ? parseInt(el.textContent) || 0 : -1;
+    if (count >= 0) chrome.storage.local.set({ cachedExamCount: count });
     sendResponse({ count });
     return;
   }
@@ -498,6 +505,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'getStudyingCount') {
     const el = document.querySelector('span[du-html="studyingNum"]');
     const count = el ? parseInt(el.textContent) || 0 : -1;
+    if (count >= 0) chrome.storage.local.set({ cachedStudyingCount: count });
     sendResponse({ count });
     return;
   }

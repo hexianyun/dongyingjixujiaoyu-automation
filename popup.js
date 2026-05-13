@@ -15,19 +15,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Query counts from content script
+  // Query counts from content script (with storage fallback for cross-page caching)
   function refreshCounts() {
+    // Read cached values from storage first (set by content script on any page)
+    chrome.storage.local.get(['cachedExamCount', 'cachedStudyingCount'], function(cache) {
+      studyingCountEl.textContent = cache.cachedStudyingCount !== undefined ? cache.cachedStudyingCount : '--';
+      examCountEl.textContent = cache.cachedExamCount !== undefined ? cache.cachedExamCount : '--';
+    });
+
+    // Try live query from current tab (updates cache if on the right page)
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-      if (!tabs[0] || !tabs[0].url || !tabs[0].url.includes('sddy.gxk.yxlearning.com')) {
-        examCountEl.textContent = '--';
-        studyingCountEl.textContent = '--';
-        return;
-      }
-      chrome.tabs.sendMessage(tabs[0].id, { type: 'getExamCount' }, function(resp) {
-        examCountEl.textContent = (!chrome.runtime.lastError && resp && resp.count >= 0) ? resp.count : '--';
-      });
+      if (!tabs[0] || !tabs[0].url || !tabs[0].url.includes('sddy.gxk.yxlearning.com')) return;
       chrome.tabs.sendMessage(tabs[0].id, { type: 'getStudyingCount' }, function(resp) {
-        studyingCountEl.textContent = (!chrome.runtime.lastError && resp && resp.count >= 0) ? resp.count : '--';
+        if (!chrome.runtime.lastError && resp && resp.count >= 0) studyingCountEl.textContent = resp.count;
+      });
+      chrome.tabs.sendMessage(tabs[0].id, { type: 'getExamCount' }, function(resp) {
+        if (!chrome.runtime.lastError && resp && resp.count >= 0) examCountEl.textContent = resp.count;
       });
     });
   }
