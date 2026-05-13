@@ -218,13 +218,30 @@ async function handlePopupQuestion(attempt) {
   if (!popup || popup.style.display === 'none') return false;
 
   sendStatus('答题弹窗...', 'running');
-  // Wait for popup to fully display before answering
-  await sleep(10000);
+  await sleep(2000);
   const opts = popup.querySelectorAll('.options .option-item');
   if (!opts.length) return false;
 
-  const idx = attempt % opts.length;
-  click(opts[idx]); await sleep(500);
+  // Detect question type from title text: 【判断题】/【单选题】/【多选题】
+  const titleEl = popup.querySelector('.title');
+  const titleText = titleEl ? titleEl.textContent : '';
+  const isMulti = titleText.includes('多选题');
+
+  if (isMulti) {
+    // 多选题: try selecting all options; if wrong, exclude one at a time
+    if (attempt === 0) {
+      opts.forEach(o => click(o));
+    } else {
+      const excludeIdx = (attempt - 1) % opts.length;
+      opts.forEach((o, i) => { if (i !== excludeIdx) click(o); });
+    }
+  } else {
+    // 单选题/判断题: cycle through options one at a time
+    const idx = attempt % opts.length;
+    click(opts[idx]);
+  }
+
+  await sleep(500);
   const commit = popup.querySelector('.commit.bplayer-btn');
   if (commit) { click(commit); await sleep(1500); }
 
