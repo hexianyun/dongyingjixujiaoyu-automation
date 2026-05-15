@@ -404,6 +404,19 @@ body {
   gap: 32px;
   color: #1d6fe8;
 }
+.footer-link {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.footer-link:hover {
+  color: #0f5fe1;
+  text-decoration: underline;
+}
 </style>
 </head>
 <body>
@@ -475,7 +488,9 @@ body {
 
   <footer class="footer">
     <div>● 浏览器内核运行正常</div>
-    <div class="footer-actions"><span>↻ 检查更新</span></div>
+    <div class="footer-actions">
+      <button class="footer-link" id="yx-check-update" type="button">↻ 检查更新</button>
+    </div>
   </footer>
 </div>
 
@@ -527,6 +542,11 @@ document.getElementById('nav-refresh').onclick = function() { window.yxNative.re
 document.getElementById('win-min').onclick = function() { window.yxNative.minimize(); };
 document.getElementById('win-max').onclick = function() { window.yxNative.maximize(); };
 document.getElementById('win-close').onclick = function() { window.yxNative.close(); };
+document.getElementById('yx-check-update').onclick = function() {
+  window.yxNative.checkUpdate().then(function() {
+    addLog('已打开更新页面，请下载最新版本后替换旧程序');
+  });
+};
 
 // ── Start / Stop ───────────────────────────────────────────
 document.getElementById('yx-btn-start').onclick = function() {

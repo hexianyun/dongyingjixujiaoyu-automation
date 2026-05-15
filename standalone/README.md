@@ -57,6 +57,25 @@ dist-electron/win-unpacked/
 - `src/electron-preload.cjs`：渲染层和主进程通信桥。
 - `src/electron-automation.cjs`：自动化执行逻辑。
 
+## 更新机制
+
+当前版本使用手动更新，不在后台自动替换程序文件。
+
+界面右下角“检查更新”按钮会打开 GitHub Releases 页面：
+
+```text
+https://github.com/hexianyun/dongyingjixujiaoyu-automation/releases
+```
+
+如果页面上有新版本：
+
+1. 下载最新发布包。
+2. 退出正在运行的旧程序。
+3. 解压新版本。
+4. 用新目录运行，或覆盖旧的 `dist-electron/win-unpacked/` 目录。
+
+发布新版本时，建议先更新 `package.json` 的 `version`，再执行 `npm run build:exe`，最后把打包结果压缩上传到 GitHub Releases。
+
 ## 界面资源
 
 - `logo.gif`：标题栏动态图标。

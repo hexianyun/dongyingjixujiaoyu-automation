@@ -57,6 +57,23 @@ standalone/dist-electron/win-unpacked/
 
 这些构建产物体积很大，已通过 `.gitignore` 排除，不会提交到 GitHub。
 
+## 版本更新
+
+程序界面右下角的“检查更新”会打开 GitHub Releases 页面：
+
+```text
+https://github.com/hexianyun/dongyingjixujiaoyu-automation/releases
+```
+
+如果有新版本，下载最新发布包后关闭旧程序，解压并覆盖旧目录，或直接使用新目录中的 `东营继续教育助手.exe`。
+
+开发者发布新版本的流程：
+
+1. 修改 `standalone/package.json` 中的 `version`。
+2. 执行 `npm run build:exe` 生成 `standalone/dist-electron/win-unpacked/`。
+3. 将打包后的程序目录压缩为 zip。
+4. 在 GitHub Releases 创建新版本并上传 zip。
+
 ## 仓库内容说明
 
 仓库保留源码、界面资源、脚本和必要配置；不提交以下本地生成内容：

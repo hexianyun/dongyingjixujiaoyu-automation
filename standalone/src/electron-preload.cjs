@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('yxNative', {
   minimize: () => ipcRenderer.invoke('window-minimize'),
   maximize: () => ipcRenderer.invoke('window-maximize'),
   close: () => ipcRenderer.invoke('window-close'),
+  checkUpdate: () => ipcRenderer.invoke('check-update'),
 
   // Event listeners for automation progress
   onUrl: callback => ipcRenderer.on('browser-url', (_event, url) => callback(url)),

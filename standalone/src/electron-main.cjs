@@ -1,8 +1,9 @@
 // Electron main process — BrowserView + Playwright CDP automation
-const { app, BrowserWindow, BrowserView, ipcMain, session } = require('electron');
+const { app, BrowserWindow, BrowserView, ipcMain, session, shell } = require('electron');
 const path = require('node:path');
 
 const DEFAULT_URL = 'http://sddy.gxk.yxlearning.com/login';
+const UPDATE_URL = 'https://github.com/hexianyun/dongyingjixujiaoyu-automation/releases';
 const CDP_PORT = 9223;
 const BASE_URL = String(process.env.BASE_URL || 'http://sddy.gxk.yxlearning.com').trim();
 const EXAMS_ONLY = ['1', 'true', 'yes'].includes(String(process.env.EXAMS_ONLY || '').toLowerCase());
@@ -392,6 +393,11 @@ ipcMain.handle('window-maximize', () => {
   else win.maximize();
 });
 ipcMain.handle('window-close', () => win.close());
+
+ipcMain.handle('check-update', async () => {
+  await shell.openExternal(UPDATE_URL);
+  return UPDATE_URL;
+});
 
 function normalizeUrl(value) {
   const raw = String(value || DEFAULT_URL).trim() || DEFAULT_URL;
