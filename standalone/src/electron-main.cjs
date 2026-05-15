@@ -88,6 +88,8 @@ function createWindow() {
   }
 
   // Load the initial URL AFTER listeners are registered
+  view.webContents.on('dom-ready', hideKnownPagePopups);
+  view.webContents.on('did-finish-load', hideKnownPagePopups);
   view.webContents.loadURL(DEFAULT_URL);
 
   win.once('ready-to-show', () => {
@@ -116,6 +118,51 @@ function layoutBrowserView() {
 }
 
 // ── Header bypass (remove X-Frame-Options etc) ─────────────
+function hideKnownPagePopups() {
+  if (!view || view.webContents.isDestroyed()) return;
+
+  const script = `
+    (() => {
+      if (window.__yxKnownPopupCleanerInstalled) return;
+      window.__yxKnownPopupCleanerInstalled = true;
+
+      const popupImagePaths = [
+        '/group1/UIMG/20260413/b4b2ea46-5658-4d14-9f76-0f57bb514812.png',
+        '/group1/UIMG/20260413/4c8d4010-f63d-43c9-b94e-bda2a602a928.png'
+      ];
+
+      function hideElement(el) {
+        let target = el;
+        for (let i = 0; i < 4 && target && target.parentElement; i += 1) {
+          const style = getComputedStyle(target.parentElement);
+          if (style.position === 'fixed' || style.position === 'absolute') {
+            target = target.parentElement;
+          } else {
+            break;
+          }
+        }
+        target.style.setProperty('display', 'none', 'important');
+        target.style.setProperty('visibility', 'hidden', 'important');
+        target.style.setProperty('pointer-events', 'none', 'important');
+      }
+
+      function clean() {
+        for (const path of popupImagePaths) {
+          document.querySelectorAll('img[src*="' + path + '"]').forEach(hideElement);
+        }
+      }
+
+      clean();
+      setInterval(clean, 1000);
+      new MutationObserver(clean).observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+    })();
+  `;
+
+  view.webContents.executeJavaScript(script, true).catch(err => {
+    console.warn('Known popup cleaner injection failed:', err.message);
+  });
+}
+
 function installHeaderBypass() {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     const headers = details.responseHeaders || {};
