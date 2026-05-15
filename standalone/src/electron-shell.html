@@ -31,7 +31,7 @@ body {
   height: 100vh;
   display: grid;
   grid-template-rows: 66px 1fr 42px;
-  padding: 18px 22px 12px;
+  padding: 0 22px 12px;
   gap: 14px;
 }
 
@@ -39,6 +39,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 78px;
+  padding-top: 10px;
   -webkit-app-region: drag;
 }
 
@@ -65,17 +67,19 @@ body {
 }
 .brand h1 {
   margin: 0;
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 800;
 }
 .version {
-  margin-left: 8px;
-  padding: 5px 12px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
   border-radius: 999px;
   background: #dfeafa;
   color: #31415c;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
+  line-height: 1;
 }
 
 .top-actions {
@@ -234,67 +238,116 @@ body {
 .section-title {
   display: flex;
   align-items: center;
-  gap: 9px;
-  margin-bottom: 18px;
-  color: #16233d;
-  font-size: 16px;
+  gap: 10px;
+  margin-bottom: 16px;
+  color: #22314f;
+  font-size: 15px;
   font-weight: 800;
 }
-.action-stack { display: grid; gap: 12px; }
+.section-title.control-title::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background:
+    linear-gradient(#6c739f 0 0) left 2px top 2px / 6px 6px no-repeat,
+    linear-gradient(#6c739f 0 0) right 2px top 2px / 6px 6px no-repeat,
+    linear-gradient(#6c739f 0 0) left 2px bottom 2px / 6px 6px no-repeat,
+    linear-gradient(#6c739f 0 0) right 2px bottom 2px / 6px 6px no-repeat;
+  opacity: .95;
+}
+.action-stack { display: grid; gap: 14px; }
 .action-btn {
   width: 100%;
-  min-height: 76px;
-  border: 0;
-  border-radius: 9px;
+  min-height: 78px;
+  border: 1px solid transparent;
+  border-radius: 14px;
   display: grid;
-  grid-template-columns: 54px 1fr;
+  grid-template-columns: 52px 1fr;
   align-items: center;
-  padding: 0 20px;
+  gap: 16px;
+  padding: 0 18px;
   text-align: left;
   cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .42);
 }
 .start {
-  color: #fff;
-  background: linear-gradient(135deg, #2684ff, #1f64f2);
-  box-shadow: 0 14px 28px rgba(47, 125, 244, .24);
+  color: #eff8f7;
+  background: linear-gradient(135deg, #8fb2b9, #739ca5);
+  box-shadow: 0 14px 26px rgba(104, 138, 147, .20);
 }
 .stop {
-  color: #df3131;
-  background: linear-gradient(135deg, #fff2f2, #ffe5e5);
-  border: 1px solid #ffc6c6;
+  color: #9d5a51;
+  background: linear-gradient(135deg, #fff6f3, #fee8e2);
+  border-color: #f5d7cf;
+  box-shadow: 0 10px 22px rgba(216, 172, 162, .16);
 }
 .exam-only {
-  color: #b45309;
-  background: linear-gradient(135deg, #fffbeb, #fef3c7);
-  border: 1px solid #fcd34d;
-}
-.exam-only .round-icon {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #fff;
+  color: #a46d2f;
+  background: linear-gradient(135deg, #fffaf1, #fff0d7);
+  border-color: #f1ddba;
+  box-shadow: 0 10px 22px rgba(226, 194, 141, .14);
 }
 .round-icon {
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, .24);
+  position: relative;
+  background: rgba(255, 255, 255, .82);
+  box-shadow: 0 8px 18px rgba(255, 255, 255, .18);
+  font-size: 0;
 }
-.stop .round-icon {
-  background: linear-gradient(135deg, #ff6b6b, #e53935);
-  color: #fff;
+.round-icon::before,
+.round-icon::after {
+  content: "";
+  position: absolute;
+}
+.start .round-icon::before {
+  left: 18px;
+  top: 13px;
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 14px solid #7b96a0;
+}
+.stop .round-icon::before {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: #c88a81;
+  inset: 15px;
+}
+.exam-only .round-icon::before {
+  left: 14px;
+  top: 13px;
+  width: 18px;
+  height: 20px;
+  border-radius: 4px;
+  background: #d3a56a;
+}
+.exam-only .round-icon::after {
+  left: 19px;
+  top: 9px;
+  width: 8px;
+  height: 6px;
+  border: 3px solid #d3a56a;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
 }
 .btn-title {
   display: block;
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1.2;
   font-weight: 800;
 }
 .btn-sub {
   display: block;
-  margin-top: 7px;
-  font-size: 13px;
-  opacity: .82;
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: .88;
 }
 .stats-grid {
   display: grid;
@@ -401,8 +454,12 @@ body {
 }
 .footer-actions {
   display: flex;
+  align-items: center;
   gap: 32px;
   color: #1d6fe8;
+}
+.footer-version {
+  color: #70819d;
 }
 .footer-link {
   border: 0;
@@ -425,7 +482,6 @@ body {
     <div class="brand">
       <div class="brand-icon"><img src="../logo.gif" alt="Logo" /></div>
       <h1>东营继续教育助手</h1>
-      <span class="version">v1.0.0</span>
     </div>
     <div class="top-actions">
       <div class="chrome-controls">
@@ -489,6 +545,7 @@ body {
   <footer class="footer">
     <div>● 浏览器内核运行正常</div>
     <div class="footer-actions">
+      <span class="version footer-version">v1.0.0</span>
       <button class="footer-link" id="yx-check-update" type="button">↻ 检查更新</button>
     </div>
   </footer>
@@ -500,6 +557,9 @@ var running = false;
 var timerInterval = null;
 var logBuffer = [];
 var maxLogLines = 200;
+
+var controlTitle = document.querySelector('.panel-card .section-title');
+if (controlTitle) controlTitle.textContent = '手动登录后开始自动学习';
 
 function setText(id, value) {
   var el = document.getElementById(id);

@@ -13,6 +13,7 @@ const PROXY_SERVER = process.env.PROXY_SERVER || '';
 
 app.commandLine.appendSwitch('remote-debugging-port', String(CDP_PORT));
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+app.commandLine.appendSwitch('mute-audio');
 if (PROXY_SERVER) {
   app.commandLine.appendSwitch('proxy-server', PROXY_SERVER);
 }
@@ -20,6 +21,15 @@ if (PROXY_SERVER) {
 let win, view;
 let running = false;
 let startedAt = null;
+
+function enforceViewMuted() {
+  if (!view || view.webContents.isDestroyed()) return;
+  try {
+    view.webContents.setAudioMuted(true);
+  } catch (err) {
+    console.warn('Failed to mute BrowserView audio:', err.message);
+  }
+}
 
 // ── Window & BrowserView ───────────────────────────────────
 function createWindow() {
@@ -48,6 +58,7 @@ function createWindow() {
   });
 
   win.setBrowserView(view);
+  enforceViewMuted();
   win.loadFile(path.join(__dirname, 'electron-shell.html'));
 
   // Prevent popup windows — intercept window.open and navigate in-place
@@ -58,10 +69,14 @@ function createWindow() {
   });
 
   view.webContents.on('did-navigate', (_event, url) => {
+    enforceViewMuted();
     win.webContents.send('browser-url', url);
+    hideKnownPagePopups();
   });
   view.webContents.on('did-navigate-in-page', (_event, url) => {
+    enforceViewMuted();
     win.webContents.send('browser-url', url);
+    hideKnownPagePopups();
   });
   view.webContents.on('page-title-updated', (_event, title) => {
     win.setTitle(title || '东营继续教育助手');
@@ -88,9 +103,20 @@ function createWindow() {
   }
 
   // Load the initial URL AFTER listeners are registered
-  view.webContents.on('dom-ready', hideKnownPagePopups);
-  view.webContents.on('did-finish-load', hideKnownPagePopups);
+  view.webContents.on('dom-ready', () => {
+    enforceViewMuted();
+    hideKnownPagePopups();
+  });
+  view.webContents.on('did-finish-load', () => {
+    enforceViewMuted();
+    hideKnownPagePopups();
+  });
   view.webContents.loadURL(DEFAULT_URL);
+  setTimeout(enforceViewMuted, 300);
+  setTimeout(enforceViewMuted, 1200);
+  setTimeout(enforceViewMuted, 3000);
+  setTimeout(hideKnownPagePopups, 1200);
+  setTimeout(hideKnownPagePopups, 3000);
 
   win.once('ready-to-show', () => {
     layoutBrowserView();
@@ -105,7 +131,7 @@ function layoutBrowserView() {
   if (!win || !view) return;
   const [width, height] = win.getContentSize();
   const left = 26;
-  const top = 140;
+  const top = 164;
   const rightPanel = 438;
   const bottom = 58;
   view.setBounds({
@@ -121,6 +147,17 @@ function layoutBrowserView() {
 function hideKnownPagePopups() {
   if (!view || view.webContents.isDestroyed()) return;
 
+  const css = `
+    .kehulocation,
+    .automv,
+    img[src*="/group1/UIMG/20260413/b4b2ea46-5658-4d14-9f76-0f57bb514812.png"],
+    img[src*="/group1/UIMG/20260413/4c8d4010-f63d-43c9-b94e-bda2a602a928.png"] {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+  `;
+
   const script = `
     (() => {
       if (window.__yxKnownPopupCleanerInstalled) return;
@@ -131,7 +168,8 @@ function hideKnownPagePopups() {
         '/group1/UIMG/20260413/4c8d4010-f63d-43c9-b94e-bda2a602a928.png'
       ];
       const popupSelectors = [
-        '.automv'
+        '.automv',
+        '.kehulocation'
       ];
 
       function hideElement(el) {
@@ -164,6 +202,9 @@ function hideKnownPagePopups() {
     })();
   `;
 
+  view.webContents.insertCSS(css).catch(err => {
+    console.warn('Known popup cleaner CSS injection failed:', err.message);
+  });
   view.webContents.executeJavaScript(script, true).catch(err => {
     console.warn('Known popup cleaner injection failed:', err.message);
   });
@@ -272,6 +313,7 @@ async function startAutomation() {
     baseUrl: BASE_URL,
     examsOnly: EXAMS_ONLY,
     allowExamSubmit: ALLOW_EXAM_SUBMIT,
+    traceProgress: false,
     proxyServer: PROXY_SERVER || undefined
   });
 
@@ -351,6 +393,7 @@ async function startExamsOnly() {
     baseUrl: BASE_URL,
     examsOnly: true,
     allowExamSubmit: ALLOW_EXAM_SUBMIT,
+    traceProgress: false,
     proxyServer: PROXY_SERVER || undefined
   });
 

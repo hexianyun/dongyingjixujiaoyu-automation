@@ -13,6 +13,18 @@ let TRACE_PROGRESS = false;
 let CHROMIUM_EXECUTABLE = '';
 let PROXY_SERVER = undefined;
 const examResponseCache = [];
+const TRACE_DIR = path.join(process.cwd(), 'progress-traces');
+const learningSignal = {
+  attached: false,
+  lastSvAt: 0,
+  lastCvAt: 0,
+  lastCvSuccessAt: 0,
+  lastCvPlayduration: 0,
+  lastCvRate: 0,
+  lastCvRespDesc: '',
+  lastVideoId: '',
+  activeVideoIndex: -1
+};
 
 // ── State ───────────────────────────────────────────────────
 let stopRequested = false;
@@ -76,6 +88,10 @@ function cleanScalar(value) {
   return String(value).trim();
 }
 
+async function appendJsonl(file, item) {
+  await fs.appendFile(file, `${JSON.stringify({ at: new Date().toISOString(), ...item })}\n`, 'utf8').catch(() => {});
+}
+
 // ── Callback helpers ────────────────────────────────────────
 function notify(evt, data) { if (cb) cb(evt, data); }
 function sendLog(message, level) {
@@ -129,6 +145,102 @@ async function keepAllFramesPlaying(page) {
   }
 }
 
+async function silenceMediaElements(page) {
+  for (const frame of page.frames()) {
+    await frame.evaluate(() => {
+      document.querySelectorAll('video, audio').forEach(media => {
+        media.muted = true;
+        media.defaultMuted = true;
+        media.volume = 0;
+        media.setAttribute('muted', '');
+      });
+    }).catch(() => {});
+  }
+}
+
+async function installMuteGuard(page) {
+  for (const frame of page.frames()) {
+    await frame.evaluate(() => {
+      if (window.__yxMuteGuardInstalled) {
+        document.querySelectorAll('video, audio').forEach(media => {
+          media.muted = true;
+          media.defaultMuted = true;
+          media.volume = 0;
+          media.setAttribute('muted', '');
+        });
+        return;
+      }
+      window.__yxMuteGuardInstalled = true;
+
+      const enforceMediaMute = media => {
+        if (!media) return;
+        try {
+          media.muted = true;
+          media.defaultMuted = true;
+          media.volume = 0;
+          media.setAttribute('muted', '');
+        } catch {}
+      };
+
+      const mediaProto = window.HTMLMediaElement && window.HTMLMediaElement.prototype;
+      if (mediaProto) {
+        const play = mediaProto.play;
+        if (typeof play === 'function' && !mediaProto.__yxPlayWrapped) {
+          mediaProto.play = function(...args) {
+            enforceMediaMute(this);
+            return play.apply(this, args);
+          };
+          mediaProto.__yxPlayWrapped = true;
+        }
+
+        const volumeDescriptor = Object.getOwnPropertyDescriptor(mediaProto, 'volume');
+        if (volumeDescriptor && !mediaProto.__yxVolumeWrapped) {
+          Object.defineProperty(mediaProto, 'volume', {
+            configurable: true,
+            enumerable: volumeDescriptor.enumerable,
+            get() {
+              return volumeDescriptor.get ? volumeDescriptor.get.call(this) : 0;
+            },
+            set(value) {
+              const next = Number(value);
+              return volumeDescriptor.set ? volumeDescriptor.set.call(this, Number.isFinite(next) && next <= 0 ? next : 0) : undefined;
+            }
+          });
+          mediaProto.__yxVolumeWrapped = true;
+        }
+
+        const mutedDescriptor = Object.getOwnPropertyDescriptor(mediaProto, 'muted');
+        if (mutedDescriptor && !mediaProto.__yxMutedWrapped) {
+          Object.defineProperty(mediaProto, 'muted', {
+            configurable: true,
+            enumerable: mutedDescriptor.enumerable,
+            get() {
+              return mutedDescriptor.get ? mutedDescriptor.get.call(this) : true;
+            },
+            set(value) {
+              return mutedDescriptor.set ? mutedDescriptor.set.call(this, value !== false) : undefined;
+            }
+          });
+          mediaProto.__yxMutedWrapped = true;
+        }
+      }
+
+      document.addEventListener('play', event => enforceMediaMute(event.target), true);
+      document.addEventListener('playing', event => enforceMediaMute(event.target), true);
+      document.addEventListener('loadedmetadata', event => enforceMediaMute(event.target), true);
+      document.addEventListener('canplay', event => enforceMediaMute(event.target), true);
+      document.addEventListener('volumechange', event => enforceMediaMute(event.target), true);
+
+      const observer = new MutationObserver(() => {
+        document.querySelectorAll('video, audio').forEach(enforceMediaMute);
+      });
+      observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+
+      document.querySelectorAll('video, audio').forEach(enforceMediaMute);
+    }).catch(() => {});
+  }
+}
+
 async function muteAllFrames(page) {
   for (const frame of page.frames()) {
     await frame.evaluate(() => {
@@ -159,6 +271,95 @@ async function muteAllFrames(page) {
       }
       document.querySelectorAll('video, audio').forEach(media => {
         media.muted = true; media.defaultMuted = true; media.volume = 0;
+      });
+    }).catch(() => {});
+  }
+}
+
+async function clickVisiblePlayButton(page) {
+  let clicked = false;
+  for (const frame of page.frames()) {
+    const result = await frame.evaluate(() => {
+      const visible = el => {
+        if (!el) return false;
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0';
+      };
+      const clickNatural = el => {
+        const r = el.getBoundingClientRect();
+        for (const type of ['mouseover', 'mousedown', 'mouseup', 'click']) {
+          el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+        }
+      };
+      const selectors = [
+        '#play',
+        '.bplayer-playbtn',
+        '.bplayer-playpause.bplayer-btn-play',
+        '.pv-playpause.pv-icon-btn-play',
+        '.prism-big-play-btn',
+        '.vjs-big-play-button',
+        '.xgplayer-start',
+        '.xgplayer-play'
+      ];
+      const button = selectors.flatMap(sel => [...document.querySelectorAll(sel)]).find(visible);
+      if (!button) return false;
+      clickNatural(button);
+      return true;
+    }).catch(() => false);
+    if (result) clicked = true;
+  }
+  return clicked;
+}
+
+async function forcePlayerMutedUi(page) {
+  for (const frame of page.frames()) {
+    await frame.evaluate(() => {
+      const visible = el => {
+        if (!el) return false;
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0';
+      };
+      const clickNatural = el => {
+        const r = el.getBoundingClientRect();
+        for (const type of ['mouseover', 'mousedown', 'mouseup', 'click']) {
+          el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+        }
+      };
+
+      const volumeValue = document.querySelector('.volume-value');
+      if (volumeValue) {
+        volumeValue.textContent = '0';
+      }
+
+      const sliders = [...document.querySelectorAll('.bplayer-volume-bar, .bplayer-volume-now, .pv-volume-bar, .vjs-volume-level')];
+      sliders.forEach(el => {
+        if (el && el.style) {
+          el.style.width = '0px';
+          el.style.height = '0px';
+        }
+      });
+
+      const candidates = [
+        '.bplayer-volume-control',
+        '.bplayer-volume',
+        '#speaker',
+        '.pv-volume',
+        '.vjs-mute-control',
+        '[aria-label*="静音"]',
+        '[title*="静音"]'
+      ];
+      const button = candidates.flatMap(sel => [...document.querySelectorAll(sel)]).find(visible);
+      if (button && !/muted|volmute|vol-0/i.test(String(button.className || ''))) {
+        clickNatural(button);
+      }
+
+      document.querySelectorAll('video, audio').forEach(media => {
+        media.muted = true;
+        media.defaultMuted = true;
+        media.volume = 0;
+        media.setAttribute('muted', '');
       });
     }).catch(() => {});
   }
@@ -266,6 +467,196 @@ async function clickPlayFallbacks(page) {
   await muteAllFrames(page);
 }
 
+function readResponseJson(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+async function attachLearningSignals(page) {
+  if (learningSignal.attached) return;
+  learningSignal.attached = true;
+
+  page.on('response', async response => {
+    const url = response.url();
+    if (!/\/train\/cms\/my-video\/(sv|cv)\.gson/i.test(url)) return;
+    const body = await response.text().catch(() => '');
+    const json = readResponseJson(body);
+    const now = Date.now();
+    if (!json || typeof json !== 'object') return;
+
+    if (/\/sv\.gson/i.test(url)) {
+      learningSignal.lastSvAt = now;
+      return;
+    }
+
+    learningSignal.lastCvAt = now;
+    learningSignal.lastCvRespDesc = String(json.respDesc || '');
+    learningSignal.lastCvRate = Number.parseFloat(json.videoLearnRate) || 0;
+    const watchInfo = json.watchInfo && typeof json.watchInfo === 'object' ? json.watchInfo : null;
+    learningSignal.lastCvPlayduration = Number.parseFloat(watchInfo?.playduration) || learningSignal.lastCvPlayduration || 0;
+    learningSignal.lastVideoId = String(watchInfo?.vid || json.videoId || learningSignal.lastVideoId || '');
+    if (/正常计时|success/i.test(learningSignal.lastCvRespDesc) || learningSignal.lastCvPlayduration > 0 || learningSignal.lastCvRate > 0) {
+      learningSignal.lastCvSuccessAt = now;
+    }
+  });
+}
+
+function recentLearningHeartbeat(maxAgeMs = 45000) {
+  return !!learningSignal.lastCvSuccessAt && (Date.now() - learningSignal.lastCvSuccessAt <= maxAgeMs);
+}
+
+async function isInitializationProgressDialogVisible(page) {
+  for (const frame of page.frames()) {
+    const visible = await frame.evaluate(() => {
+      const isVisible = el => {
+        if (!el) return false;
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0';
+      };
+      return [...document.querySelectorAll('body *')].some(el => isVisible(el) && /初始化进度异常|请重新点击播放按钮/.test((el.textContent || '').replace(/\s+/g, ' ').trim()));
+    }).catch(() => false);
+    if (visible) return true;
+  }
+  return false;
+}
+
+async function recoverInitializationProgressDialog(page) {
+  let handled = false;
+  for (const frame of page.frames()) {
+    const result = await frame.evaluate(() => {
+      const isVisible = el => {
+        if (!el) return false;
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0';
+      };
+      const text = el => (el.textContent || '').replace(/\s+/g, ' ').trim();
+      const dialog = [...document.querySelectorAll('body *')].find(el => isVisible(el) && /初始化进度异常|请重新点击播放按钮/.test(text(el)));
+      if (!dialog) return false;
+      const clickNatural = el => {
+        const r = el.getBoundingClientRect();
+        for (const type of ['mouseover', 'mousedown', 'mouseup', 'click']) {
+          el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+        }
+      };
+      const button = [dialog, dialog.parentElement, document]
+        .filter(Boolean)
+        .flatMap(root => [...root.querySelectorAll ? root.querySelectorAll('button, a, .layui-layer-btn0, [role=\"button\"], .btn') : []])
+        .find(el => isVisible(el) && /确定|确认|继续/.test(text(el) || String(el.className || '')));
+      if (!button) return false;
+      clickNatural(button);
+      return true;
+    }).catch(() => false);
+    if (result) handled = true;
+  }
+  if (handled) {
+    sendLog('检测到初始化进度异常弹窗，已点击确定并准备重试播放', 'warn');
+    await sleep(800);
+  }
+  return handled;
+}
+
+async function waitForPlayerReady(page, timeoutMs = 15000) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const ready = await page.evaluate(() => {
+      const visible = el => {
+        if (!el) return false;
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden';
+      };
+      const hasPlayableVideo = [...document.querySelectorAll('video')].some(v => visible(v) && (v.readyState >= 2 || Number.isFinite(v.duration) || v.currentSrc || v.src));
+      const hasPlayer = !!document.querySelector('.bplayer-wrap, .pv-video-player, .polyv-video-player, [id*=player], [class*=player]');
+      const hasPlayButton = ['#play', '.bplayer-playbtn', '.bplayer-playpause', '.pv-playpause', '.prism-big-play-btn', '.vjs-big-play-button']
+        .some(sel => [...document.querySelectorAll(sel)].some(visible));
+      return hasPlayableVideo || (hasPlayer && hasPlayButton);
+    }).catch(() => false);
+    if (ready) return true;
+    await sleep(500);
+  }
+  return false;
+}
+
+async function waitForLearningHeartbeat(page, timeoutMs = 30000) {
+  const startedAt = Date.now();
+  let lastPlayAttemptAt = 0;
+  let retryCount = 0;
+
+  while (Date.now() - startedAt < timeoutMs) {
+    if (recentLearningHeartbeat()) return true;
+    await installMuteGuard(page);
+    await silenceMediaElements(page);
+    await forcePlayerMutedUi(page);
+    await handleQuestionPopups(page);
+
+    if (await recoverInitializationProgressDialog(page)) {
+      retryCount++;
+      await clickVisiblePlayButton(page);
+      lastPlayAttemptAt = Date.now();
+    }
+
+    const shouldRetryPlay = !lastPlayAttemptAt || (Date.now() - lastPlayAttemptAt >= 5000);
+    if (shouldRetryPlay) {
+      await clickVisiblePlayButton(page);
+      lastPlayAttemptAt = Date.now();
+    }
+
+    if (TRACE_PROGRESS && (retryCount > 0 || Date.now() - startedAt > 8000)) {
+      await captureLearningSnapshot(page, 'waiting-learning-heartbeat', {
+        activeVideoIndex: learningSignal.activeVideoIndex,
+        retryCount,
+        lastCvAt: learningSignal.lastCvAt,
+        lastCvSuccessAt: learningSignal.lastCvSuccessAt,
+        lastCvRate: learningSignal.lastCvRate,
+        lastCvPlayduration: learningSignal.lastCvPlayduration,
+        lastCvRespDesc: learningSignal.lastCvRespDesc
+      });
+    }
+
+    await sleep(1000);
+  }
+  return recentLearningHeartbeat();
+}
+
+async function startVideoPlayback(page, videoIndex) {
+  learningSignal.activeVideoIndex = videoIndex;
+  learningSignal.lastSvAt = 0;
+  learningSignal.lastCvAt = 0;
+  learningSignal.lastCvSuccessAt = 0;
+  learningSignal.lastCvPlayduration = 0;
+  learningSignal.lastCvRate = 0;
+  learningSignal.lastCvRespDesc = '';
+  learningSignal.lastVideoId = '';
+
+  await installMuteGuard(page);
+  await silenceMediaElements(page);
+  await forcePlayerMutedUi(page);
+  await waitForPlayerReady(page, 15000);
+  await installMuteGuard(page);
+  await muteAllFrames(page);
+  await forcePlayerMutedUi(page);
+  await clickVisiblePlayButton(page);
+  const started = await waitForLearningHeartbeat(page, 30000);
+  if (!started) {
+    const hasInitDialog = await isInitializationProgressDialogVisible(page);
+    if (hasInitDialog) {
+      throw new Error(`视频 ${videoIndex + 1} 初始化进度异常，重试后仍未恢复`);
+    }
+    sendLog(`视频 ${videoIndex + 1} 在初始化窗口内未观察到计时心跳，转入保守恢复模式`, 'warn');
+  } else {
+    sendLog(`视频 ${videoIndex + 1} 已建立计时心跳，进入持续学习`, 'info');
+  }
+  await installMuteGuard(page);
+  await muteAllFrames(page);
+  await forcePlayerMutedUi(page);
+  return started;
+}
+
 async function logPageState(page, reason) {
   const state = await page.evaluate(() => ({
     title: document.title,
@@ -280,6 +671,90 @@ async function firstVisibleLocator(locators) {
     if (await locator.isVisible().catch(() => false)) return locator;
   }
   return null;
+}
+
+async function captureLearningSnapshot(page, reason, extra = {}) {
+  if (!TRACE_PROGRESS) return;
+  await fs.mkdir(TRACE_DIR, { recursive: true }).catch(() => {});
+  const traceFile = path.join(TRACE_DIR, 'learning-popup-diagnostics.jsonl');
+  const snapshot = await page.evaluate(() => {
+    const visible = el => {
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0';
+    };
+    const text = el => (el.textContent || '').replace(/\s+/g, ' ').trim();
+    const dialogNodes = [...document.querySelectorAll('body *')]
+      .filter(visible)
+      .filter(el => /提示|确定|初始化进度异常|播放按钮|重新点击/.test(text(el)))
+      .slice(0, 8)
+      .map(el => ({
+        tag: el.tagName,
+        id: el.id,
+        className: String(el.className || ''),
+        text: text(el).slice(0, 300),
+        html: el.outerHTML.slice(0, 1500)
+      }));
+    const player = document.querySelector('.bplayer-wrap, .pv-video-player, .polyv-video-player, [id*=player], [class*=player]');
+    const videos = [...document.querySelectorAll('video')].slice(0, 5).map(v => ({
+      currentTime: v.currentTime || 0,
+      duration: Number.isFinite(v.duration) ? v.duration : null,
+      paused: !!v.paused,
+      ended: !!v.ended,
+      readyState: v.readyState,
+      src: String(v.currentSrc || v.src || '').slice(0, 300)
+    }));
+    return {
+      href: location.href,
+      title: document.title,
+      bodyText: (document.body?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 1200),
+      dialogNodes,
+      player: player ? {
+        tag: player.tagName,
+        id: player.id,
+        className: String(player.className || ''),
+        text: text(player).slice(0, 1200)
+      } : null,
+      videos
+    };
+  }).catch(err => ({ href: page.url(), error: err.message }));
+  await appendJsonl(traceFile, { type: 'learning-snapshot', reason, snapshot, extra });
+}
+
+async function attachProgressTrace(page) {
+  await fs.mkdir(TRACE_DIR, { recursive: true });
+  const traceFile = path.join(TRACE_DIR, `progress-${new Date().toISOString().replace(/[:.]/g, '-')}.jsonl`);
+  const interesting = /progress|study|learn|heart|time|record|watch|finish|video|course|lesson|log|save|update|play|exam|paper|submit|answer/i;
+
+  page.on('request', async request => {
+    const url = request.url();
+    if (!interesting.test(url)) return;
+    await appendJsonl(traceFile, {
+      type: 'request',
+      method: request.method(),
+      url: redactUrl(url),
+      postData: summarizeText(request.postData() || '')
+    });
+  });
+
+  page.on('response', async response => {
+    const request = response.request();
+    const url = response.url();
+    if (!interesting.test(url)) return;
+    const video = await readBestVideoState(page).catch(() => null);
+    const text = await response.text().catch(() => '');
+    await appendJsonl(traceFile, {
+      type: 'response',
+      method: request.method(),
+      url: redactUrl(url),
+      status: response.status(),
+      video,
+      body: summarizeText(text)
+    });
+  });
+
+  sendLog(`进度观测已开启: ${traceFile}`);
 }
 
 // ── Exam Capture Helpers ───────────────────────────────────
@@ -505,6 +980,8 @@ async function runAutomation(page) {
   // Wait for login
   sendPhase('login', '正在登录，请在浏览器中输入账号密码...');
   await waitForLoginIfNeeded(page);
+  await attachLearningSignals(page);
+  if (TRACE_PROGRESS) await attachProgressTrace(page);
   if (checkStop()) { sendPhase('idle', '已停止'); sendRunning(false); return; }
 
   if (EXAMS_ONLY) {
@@ -564,6 +1041,7 @@ async function runLearning(page) {
     sendCourses(totalCourses, completedCourses, course.title);
     await course.locator.click({ force: true });
     await waitForCoursePage(page);
+    await captureLearningSnapshot(page, 'course-page-ready');
     await playCourseVideos(page);
 
     if (checkStop()) { sendLog('停止: 用户中断学习', 'warn'); return; }
@@ -613,10 +1091,11 @@ async function playCourseVideos(page) {
     if (!pending.length) { sendLog('当前课程视频已完成'); return; }
     const item = pending[0];
     sendLog(`播放视频: ${item.index + 1}/${videos.length}, 当前进度 ${item.progress}%`);
+    await captureLearningSnapshot(page, 'before-video-click', { videoIndex: item.index, progress: item.progress });
     await item.locator.click({ force: true });
     await sleep(1000);
-    await muteAllFrames(page);
-    await sleep(500);
+    await captureLearningSnapshot(page, 'after-video-click', { videoIndex: item.index, progress: item.progress });
+    await startVideoPlayback(page, item.index);
     await waitVideoDone(page, item.index);
   }
 }
@@ -637,33 +1116,75 @@ async function getVideoItems(page) {
 async function waitVideoDone(page, videoIndex) {
   let lastTime = -1;
   let stall = 0;
+  let heartbeatMisses = 0;
   const startedAt = Date.now();
+  let iteration = 0;
 
   while (Date.now() - startedAt < 6 * 60 * 60 * 1000) {
-    if (checkStop()) { sendLog('停止: 用户中断视频播放', 'warn'); return; }
-    await muteAllFrames(page);
-    await keepAllFramesPlaying(page);
+    if (checkStop()) { sendLog('Stop: user interrupted video playback', 'warn'); return; }
+    await installMuteGuard(page);
+    await silenceMediaElements(page);
+    await forcePlayerMutedUi(page);
     await handleQuestionPopups(page);
+    iteration++;
+
+    if (await recoverInitializationProgressDialog(page)) {
+      await clickVisiblePlayButton(page);
+      await waitForLearningHeartbeat(page, 12000);
+    }
 
     const rows = await getVideoItems(page);
     const current = rows[videoIndex];
     if (current && (current.progress >= 100 || current.finished)) {
-      sendLog(`视频完成: ${videoIndex + 1}`);
+      sendLog(`Video completed: ${videoIndex + 1}`);
       return;
     }
 
     const state = await readBestVideoState(page);
+    if (iteration <= 4 || stall >= 4 || heartbeatMisses >= 4) {
+      await captureLearningSnapshot(page, 'wait-video-loop', {
+        videoIndex,
+        iteration,
+        stall,
+        heartbeatMisses,
+        state,
+        currentProgress: current?.progress ?? null,
+        currentFinished: !!current?.finished,
+        lastCvAt: learningSignal.lastCvAt,
+        lastCvSuccessAt: learningSignal.lastCvSuccessAt,
+        lastCvRate: learningSignal.lastCvRate,
+        lastCvPlayduration: learningSignal.lastCvPlayduration
+      });
+    }
     if (state?.ended) return;
-    if (state && state.currentTime > 0) {
+
+    if (recentLearningHeartbeat()) {
+      heartbeatMisses = 0;
+      await keepAllFramesPlaying(page);
+    } else {
+      heartbeatMisses++;
+      if (heartbeatMisses >= 5) {
+        sendLog('Learning heartbeat interrupted, retrying playback', 'warn');
+        await clickVisiblePlayButton(page);
+        await waitForLearningHeartbeat(page, 15000);
+        heartbeatMisses = 0;
+      }
+    }
+
+    if (state && state.currentTime > 0 && recentLearningHeartbeat(90000)) {
       if (Math.abs(state.currentTime - lastTime) < 0.2) { stall++; } else { stall = 0; lastTime = state.currentTime; }
-      if (stall >= 5) { sendLog('检测到播放卡住，尝试恢复'); await clickPlayFallbacks(page); stall = 0; }
+      if (stall >= 5) {
+        sendLog('Playback appears stalled, trying fallback recovery', 'warn');
+        await clickPlayFallbacks(page);
+        stall = 0;
+      }
     }
     await sleep(3000);
   }
-  throw new Error(`等待视频 ${videoIndex + 1} 完成超时`);
+  throw new Error(`Timed out waiting for video ${videoIndex + 1} to finish`);
 }
 
-// ── Exam Flow ──────────────────────────────────────────────
+// Exam Flow
 async function checkOnlineExams(page) {
   sendLog('进入在线考试页面');
   sendPhase('exams', '正在进入考试页面...');
