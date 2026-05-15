@@ -1,13 +1,19 @@
-# 独立学习助手
+# 东营继续教育助手独立版
 
-这个版本不依赖 Chrome 扩展，使用 Playwright 启动自带 Chromium。优势是可以直接控制主页面、第三方 iframe、网络和播放器状态。
+这是项目的 Electron 独立运行版本。它不依赖 Chrome 扩展，启动后会打开一个桌面窗口：左侧是内置浏览器，右侧是学习控制面板。
+
+## 功能
+
+- 内置浏览器打开继续教育平台。
+- 右侧面板控制开始学习、停止学习和考试模式。
+- 实时显示程序状态、当前任务、运行时长、课程和考试统计。
+- 通过 Playwright CDP 控制内置 BrowserView，实现页面、视频和考试流程自动化。
 
 ## 安装
 
 ```powershell
 cd E:\jixujiaoyu\standalone
 npm install
-npm run install-browser
 ```
 
 ## 运行
@@ -16,28 +22,51 @@ npm run install-browser
 npm start
 ```
 
-程序会打开 Chromium 到登录页。手动登录后，回到终端按回车开始自动学习。
-
-目标站只能 HTTP 访问，程序会强制把 `BASE_URL` 规范成 `http://`。不要填写 `https://...`。
-
-可选环境变量：
+常用运行模式：
 
 ```powershell
-$env:BASE_URL="http://sddy.gxk.yxlearning.com"
-$env:PROXY_SERVER="http://127.0.0.1:10808"
-$env:HOST_RESOLVER_RULES="MAP sddy.gxk.yxlearning.com 192.168.2.1"
-npm start
+npm run start:auto
+npm run start:exam
+npm run start:exam:submit
 ```
 
-程序会优先使用 `PROXY_SERVER`，如果没有设置，会自动继承终端里的 `HTTP_PROXY` / `ALL_PROXY`。如果你当前浏览器能访问但程序不能访问，通常需要把当前浏览器使用的代理、DNS 或 host 映射同步给 `PROXY_SERVER` 或 `HOST_RESOLVER_RULES`。
+环境变量：
 
-## 进度观测
+- `BASE_URL`：目标平台地址，默认 `http://sddy.gxk.yxlearning.com`。
+- `PROXY_SERVER`：可选代理，例如 `http://127.0.0.1:10808`。
+- `AUTO_CONTINUE`：设为 `1` 时启动后自动开始。
+- `EXAMS_ONLY`：设为 `1` 时只执行考试模式。
+- `ALLOW_EXAM_SUBMIT`：控制是否允许自动提交考试。
 
-如果要分析远程服务端怎样认定学习进度，可以打开只读观测模式：
+## 打包
 
 ```powershell
-$env:TRACE_PROGRESS="1"
-npm start
+npm run build:exe
 ```
 
-日志会写入 `standalone\traces\progress-*.jsonl`，包含疑似学习进度/心跳请求的 URL、方法、状态码、请求体摘要、响应摘要和当时的视频时间。这个模式只记录，不伪造、不重放请求。
+打包输出：
+
+```text
+dist-electron/win-unpacked/
+```
+
+主要入口文件：
+
+- `src/electron-main.cjs`：Electron 主进程、窗口、BrowserView 和 IPC。
+- `src/electron-shell.html`：桌面窗口界面。
+- `src/electron-preload.cjs`：渲染层和主进程通信桥。
+- `src/electron-automation.cjs`：自动化执行逻辑。
+
+## 界面资源
+
+- `logo.gif`：标题栏动态图标。
+- `logo.png`：备用静态图。
+- `dyzs.ico`：Windows 程序图标。
+
+如果直接修改已打包程序，需要更新：
+
+```text
+dist-electron/win-unpacked/resources/app.asar
+```
+
+更推荐修改源码后重新执行 `npm run build:exe`。
