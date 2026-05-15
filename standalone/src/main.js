@@ -2032,7 +2032,8 @@ async function clickPlayFallbacks(page) {
 }
 
 async function textOf(locator) {
-  return (await locator.textContent({ timeout: 1000 }).catch(() => '') || '').trim();
+  const value = await locator.textContent({ timeout: 1000 }).catch(() => '');
+  return String(value || '').trim();
 }
 
 function parseProgress(text) {

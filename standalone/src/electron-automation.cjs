@@ -42,8 +42,9 @@ function normalizeProxyServer(value) {
   return raw.replace(/^socks5h:\/\//i, 'socks5://');
 }
 
-function textOf(locator) {
-  return (locator.textContent({ timeout: 1000 }).catch(() => '') || '').trim();
+async function textOf(locator) {
+  const value = await locator.textContent({ timeout: 1000 }).catch(() => '');
+  return String(value || '').trim();
 }
 
 function parseProgress(text) {
