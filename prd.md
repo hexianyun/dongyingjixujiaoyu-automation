@@ -14,9 +14,7 @@
 
 ## 插件流程
 
-1\. 直接从  东营市专业技术人员公需科目培训平台 http://sddy.gxk.yxlearning.com/index 进入，
-
-
+1\. 点击插件 打开网址提示用户登录http://sddy.gxk.yxlearning.com/login
 
 2\. 等待用户登录后手动点击开始
 

@@ -10,8 +10,16 @@ const STEP = {
   DONE: 5
 };
 
+const IS_TOP_FRAME = window === window.top;
 let isRunning = false;
 let lastUIMutedVideoKey = null;
+let playerObserverStarted = false;
+let autoPlayIntervalId = null;
+let autoMuteIntervalId = null;
+let activityIntervalId = null;
+let mediaBindingIntervalId = null;
+let frameVideoPlayingAt = 0;
+let frameVideoEndedAt = 0;
 
 // =====================================================
 // State persistence
@@ -45,6 +53,20 @@ function sendProgress(value, text) {
   chrome.runtime.sendMessage({ type: 'progress', value, text });
 }
 
+window.addEventListener('message', ev => {
+  const msg = ev.data;
+  if (!msg || msg.__autoExtVideo !== true) return;
+  if (msg.type === 'playing') frameVideoPlayingAt = Date.now();
+  if (msg.type === 'ended') frameVideoEndedAt = Date.now();
+});
+
+function postFrameVideoState(type, data = {}) {
+  if (IS_TOP_FRAME) return;
+  try {
+    window.parent.postMessage({ __autoExtVideo: true, type, data, href: location.href }, '*');
+  } catch (e) {}
+}
+
 function waitForEl(selector, timeout = 15000) {
   return new Promise((resolve, reject) => {
     const found = document.querySelector(selector);
@@ -66,7 +88,25 @@ function click(el) {
   el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
   el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
   el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-  if (typeof el.onclick === 'function') el.onclick();
+}
+
+function natClick(el) {
+  if (!el || !isVisible(el)) return false;
+  const target = getControlClickTarget(el) || el;
+  const rect = target.getBoundingClientRect();
+  const x = rect.left + rect.width / 2;
+  const y = rect.top + rect.height / 2;
+  ['mousedown', 'mouseup', 'click'].forEach(type => {
+    target.dispatchEvent(new MouseEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX: x,
+      clientY: y,
+      button: 0
+    }));
+  });
+  return true;
 }
 
 function hoverVideoPlayer() {
@@ -91,10 +131,21 @@ function isVisible(el) {
   return true;
 }
 
+function getVisiblePopup() {
+  return [...document.querySelectorAll('.bplayer-question-wrap')].find(isVisible) || null;
+}
+
 function getMainVideo() {
   const videos = [...document.querySelectorAll('video')].filter(v => isFinite(v.duration) ? v.duration >= 60 : true);
   if (!videos.length) return document.querySelector('video');
   return videos.sort((a, b) => (b.duration || 0) - (a.duration || 0))[0];
+}
+
+function getMediaElements() {
+  return [...document.querySelectorAll('video, audio')].filter(el => {
+    if (el.tagName === 'AUDIO') return true;
+    return isVisible(el) || (el.currentSrc || el.src);
+  });
 }
 
 function forceMuteVideo(video) {
@@ -106,22 +157,37 @@ function forceMuteVideo(video) {
   return video.muted === true;
 }
 
+function forceMuteAllMedia() {
+  const media = getMediaElements();
+  let mutedAny = false;
+  for (const el of media) {
+    mutedAny = forceMuteVideo(el) || mutedAny;
+  }
+  console.log(`[Auto] forceMuteAllMedia count=${media.length}`);
+  return mutedAny;
+}
+
+function getControlClickTarget(el) {
+  if (!el) return null;
+  return el.closest('button, [role="button"], .pv-icon-btn, .bplayer-btn, .control-btn, .player-btn') || el.parentElement || el;
+}
+
 function tryClickPlayButton() {
   hoverVideoPlayer();
   const play = document.getElementById('play');
   const stop = document.getElementById('stop');
   if (play && isVisible(play) && (!stop || !isVisible(stop))) {
-    click(play);
+    natClick(play);
     return true;
   }
   const pv = document.querySelector('.pv-playpause.pv-icon-btn-play');
   if (pv && isVisible(pv)) {
-    click(pv);
+    natClick(pv);
     return true;
   }
   const bp = document.querySelector('.bplayer-playpause.bplayer-btn-play');
   if (bp && isVisible(bp)) {
-    click(bp);
+    natClick(bp);
     return true;
   }
   return false;
@@ -130,7 +196,7 @@ function tryClickPlayButton() {
 function simulateClickPlayArea() {
   const playerArea = document.querySelector('.bplayer-wrap, .pv-video-player, .player-container, .bplayer, .video-player') || document.querySelector('video')?.parentElement;
   if (!playerArea || !isVisible(playerArea)) return false;
-  return click(playerArea), true;
+  return natClick(playerArea);
 }
 
 function simulateSpacebarPress() {
@@ -150,9 +216,146 @@ function simulateSpacebarPress() {
   setTimeout(() => document.dispatchEvent(up), 50);
 }
 
-// =====================================================
-// Course List Processing (on /my/learning page)
-// =====================================================
+function isVideoActuallyPlaying(video = getMainVideo() || document.querySelector('video')) {
+  return !!(video && !video.paused && !video.ended && video.currentTime > 0);
+}
+
+function stopAutoPlayChecks() {
+  if (autoPlayIntervalId !== null) {
+    clearInterval(autoPlayIntervalId);
+    autoPlayIntervalId = null;
+  }
+}
+
+function startAutoPlayChecks() {
+  if (autoPlayIntervalId !== null) return;
+  autoPlayIntervalId = setInterval(async () => {
+    const video = getMainVideo() || document.querySelector('video');
+    if (isVideoActuallyPlaying(video)) {
+      stopAutoPlayChecks();
+      return;
+    }
+
+    const play = document.getElementById('play');
+    const stop = document.getElementById('stop');
+    const pv = document.querySelector('.pv-playpause.pv-icon-btn-play');
+    const bp = document.querySelector('.bplayer-playpause.bplayer-btn-play');
+
+    if (play && isVisible(play) && (!stop || !isVisible(stop))) {
+      console.log('[Auto] interval auto play via #play');
+      natClick(play);
+    } else if (pv && isVisible(pv)) {
+      console.log('[Auto] interval auto play via .pv-playpause');
+      natClick(pv);
+    } else if (bp && isVisible(bp)) {
+      console.log('[Auto] interval auto play via .bplayer-playpause');
+      natClick(bp);
+    } else if (video && video.paused && isVisible(video)) {
+      console.log('[Auto] interval auto play via spacebar');
+      simulateSpacebarPress();
+    }
+  }, 2000);
+}
+
+function startAutoMuteLoop() {
+  if (autoMuteIntervalId !== null) return;
+  autoMuteIntervalId = setInterval(() => {
+    muteVideo().catch(() => {});
+  }, 1000);
+}
+
+function startActivityLoop() {
+  if (activityIntervalId !== null) return;
+  activityIntervalId = setInterval(() => {
+    try {
+      const area = document.querySelector('.bplayer-wrap, .pv-video-player, .player-container, .bplayer, video') || document.body;
+      if (!area) return;
+      const rect = area.getBoundingClientRect();
+      const x = Math.max(1, rect.left + Math.max(10, rect.width / 2) + (Math.random() - 0.5) * 20);
+      const y = Math.max(1, rect.top + Math.max(10, rect.height / 2) + (Math.random() - 0.5) * 20);
+      area.dispatchEvent(new MouseEvent('mousemove', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        clientX: x,
+        clientY: y
+      }));
+      if (IS_TOP_FRAME) {
+        window.scrollBy({ top: 4, behavior: 'instant' });
+        setTimeout(() => window.scrollBy({ top: -4, behavior: 'instant' }), 80);
+      }
+    } catch (e) {}
+  }, 5000);
+}
+
+function bindMediaEvents() {
+  getMediaElements().forEach(el => {
+    if (el.__autoExtMediaBound) return;
+    el.__autoExtMediaBound = true;
+    el.addEventListener('playing', () => {
+      postFrameVideoState('playing', {
+        currentTime: el.currentTime || 0,
+        duration: el.duration || 0
+      });
+      stopAutoPlayChecks();
+    });
+    el.addEventListener('pause', () => {
+      if (!el.ended) startAutoPlayChecks();
+    });
+    el.addEventListener('ended', () => {
+      postFrameVideoState('ended', {
+        currentTime: el.currentTime || 0,
+        duration: el.duration || 0
+      });
+      startAutoPlayChecks();
+    });
+  });
+}
+
+function startMediaBindingLoop() {
+  if (mediaBindingIntervalId !== null) return;
+  bindMediaEvents();
+  mediaBindingIntervalId = setInterval(() => {
+    bindMediaEvents();
+    const video = getMainVideo() || document.querySelector('video');
+    if (video && !video.paused && !video.ended) {
+      postFrameVideoState('playing', {
+        currentTime: video.currentTime || 0,
+        duration: video.duration || 0
+      });
+    }
+  }, 3000);
+}
+
+function ensurePlayerObserver() {
+  if (playerObserverStarted) return;
+  playerObserverStarted = true;
+
+  const selectors = ['.pv-video-player', '.player-container', '.bplayer-wrap'];
+  const obs = new MutationObserver(() => {
+    for (const selector of selectors) {
+      if (document.querySelector(selector)) {
+        console.log(`[Auto] player observer found ${selector}`);
+        startAutoPlayChecks();
+        startAutoMuteLoop();
+        obs.disconnect();
+        return;
+      }
+    }
+  });
+
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+
+  for (const selector of selectors) {
+    if (document.querySelector(selector)) {
+      console.log(`[Auto] player observer immediate hit ${selector}`);
+      startAutoPlayChecks();
+      startAutoMuteLoop();
+      obs.disconnect();
+      return;
+    }
+  }
+}
 
 async function getCourses() {
   const items = document.querySelectorAll('.col-xs-12.col-sm-12.col-md-6.col-lg-4');
@@ -219,6 +422,7 @@ async function findFirstIncompleteCourse() {
 // =====================================================
 
 async function muteVideo() {
+  hoverVideoPlayer();
   const v = getMainVideo() || document.querySelector('video');
   if (v) {
     forceMuteVideo(v);
@@ -229,18 +433,18 @@ async function muteVideo() {
   if (!videoKey) return !!v;
 
   const unspeaker = document.getElementById('unspeaker');
+  const speaker = document.getElementById('speaker');
+  console.log(`[Auto] muteVideo state speakerVisible=${!!(speaker && isVisible(speaker))} unspeakerVisible=${!!(unspeaker && isVisible(unspeaker))} videoKey=${videoKey} lastUIMuted=${lastUIMutedVideoKey}`);
+
   if (unspeaker && isVisible(unspeaker)) {
     lastUIMutedVideoKey = videoKey;
     sendStatus('已静音', 'running');
     return true;
   }
 
-  const speaker = document.getElementById('speaker');
-  if (speaker && videoKey !== lastUIMutedVideoKey) {
+  if (speaker && isVisible(speaker) && (!unspeaker || !isVisible(unspeaker))) {
     hoverVideoPlayer();
-    const btn = speaker.closest('button') || speaker.closest('[role="button"]') || speaker.parentElement;
-    if (btn && isVisible(btn)) {
-      click(btn);
+    if (natClick(speaker)) {
       await sleep(300);
       const currentVideo = getMainVideo() || document.querySelector('video');
       if (currentVideo) {
@@ -254,18 +458,19 @@ async function muteVideo() {
   }
 
   const muteBtn = document.querySelector('.volume-icon, .mute-btn, .player-mute, [class*="volume"], [class*="mute"]');
-  if (muteBtn && videoKey !== lastUIMutedVideoKey && isVisible(muteBtn)) {
+  if (muteBtn && isVisible(muteBtn)) {
     hoverVideoPlayer();
-    click(muteBtn);
-    await sleep(300);
-    const currentVideo = getMainVideo() || document.querySelector('video');
-    if (currentVideo) {
-      forceMuteVideo(currentVideo);
-      console.log(`[Auto] muteVideo: alt-ui-muted=${currentVideo.muted} volume=${currentVideo.volume}`);
+    if (natClick(muteBtn)) {
+      await sleep(300);
+      const currentVideo = getMainVideo() || document.querySelector('video');
+      if (currentVideo) {
+        forceMuteVideo(currentVideo);
+        console.log(`[Auto] muteVideo: alt-ui-muted=${currentVideo.muted} volume=${currentVideo.volume}`);
+      }
+      lastUIMutedVideoKey = videoKey;
+      sendStatus('已静音', 'running');
+      return true;
     }
-    lastUIMutedVideoKey = videoKey;
-    sendStatus('已静音', 'running');
-    return true;
   }
 
   return !!v;
@@ -309,8 +514,8 @@ async function ensureVideoPlaying() {
   console.log('[Auto] ensureVideoPlaying: looking for video');
   let video = getMainVideo() || document.querySelector('video');
   for (let retry = 0; retry < 15; retry++) {
-    const popup = document.querySelector('.bplayer-question-wrap');
-    const popupVisible = !!(popup && window.getComputedStyle(popup).display !== 'none');
+    const popup = getVisiblePopup();
+    const popupVisible = !!popup;
     hoverVideoPlayer();
     console.log(`[Auto] ensureVideoPlaying retry=${retry} video=${!!video} readyState=${video?.readyState ?? 'n/a'} paused=${video?.paused ?? 'n/a'} popupVisible=${popupVisible}`);
 
@@ -319,6 +524,7 @@ async function ensureVideoPlaying() {
       forceMuteVideo(video);
       if (video.readyState >= 2 && !video.ended) {
         simulateClickPlayArea();
+        tryClickPlayButton();
         await video.play().catch(err => console.log('[Auto] early video.play failed:', err?.message || err));
       }
     }
@@ -349,8 +555,9 @@ async function ensureVideoPlaying() {
     }
     await muteVideo();
     forceMuteVideo(video);
-    console.log(`[Auto] ensureVideoPlaying play retry=${retry} paused=${video.paused} currentTime=${video.currentTime} muted=${video.muted} volume=${video.volume}`);
+    console.log(`[Auto] ensureVideoPlaying play retry=${retry} paused=${video.paused} currentTime=${video.currentTime} muted=${video.muted} volume=${video.volume} playVisible=${!!(document.getElementById('play') && isVisible(document.getElementById('play')))} stopVisible=${!!(document.getElementById('stop') && isVisible(document.getElementById('stop')))} speakerVisible=${!!(document.getElementById('speaker') && isVisible(document.getElementById('speaker')))} unspeakerVisible=${!!(document.getElementById('unspeaker') && isVisible(document.getElementById('unspeaker')))}`);
     simulateClickPlayArea();
+    tryClickPlayButton();
     await video.play().catch(err => console.log('[Auto] video.play failed:', err?.message || err));
     if (video.paused || video.currentTime === lastCheck) {
       if (tryClickPlayButton()) {
@@ -379,14 +586,19 @@ async function waitVideoEnd() {
   if (!ok) {
     for (let r = 0; r < 10; r++) {
       await sleep(2000);
+      if (Date.now() - frameVideoPlayingAt < 7000) {
+        ok = true;
+        console.log('[Auto] waitVideoEnd: iframe video heartbeat detected');
+        break;
+      }
       const popupHandled = await handlePopupQuestion(qAttempt);
       if (popupHandled) {
         qAttempt++;
         console.log(`[Auto] waitVideoEnd: handled popup during video wait retry=${r}`);
         await muteVideo();
       }
-      const popup = document.querySelector('.bplayer-question-wrap');
-      const popupVisible = !!(popup && window.getComputedStyle(popup).display !== 'none');
+      const popup = getVisiblePopup();
+      const popupVisible = !!popup;
       const v = getMainVideo() || document.querySelector('video');
       const playBtn = document.querySelector('#play');
       console.log(`[Auto] waitVideoEnd preloop retry=${r} video=${!!v} readyState=${v?.readyState ?? 'n/a'} playBtn=${!!playBtn} popupVisible=${popupVisible}`);
@@ -404,6 +616,10 @@ async function waitVideoEnd() {
 
   while (true) {
     await sleep(3000);
+    if (Date.now() - frameVideoEndedAt < 10000) {
+      console.log('[Auto] waitVideoEnd: iframe ended signal detected');
+      return;
+    }
     const popupHandled = await handlePopupQuestion(qAttempt);
     if (popupHandled) {
       qAttempt++;
@@ -437,10 +653,13 @@ async function waitVideoEnd() {
     // while popup was showing, and a new popup could be for the next step).
     // IMPORTANT: check element exists first — null?.style.display gives undefined,
     // and undefined !== 'none' is always true, causing infinite loop.
-    const curPopup = document.querySelector('.bplayer-question-wrap');
-    if (curPopup && window.getComputedStyle(curPopup).display !== 'none') continue;
+    const curPopup = getVisiblePopup();
+    if (curPopup) continue;
 
     const video = getMainVideo() || document.querySelector('video');
+    if (!video && Date.now() - frameVideoPlayingAt < 7000) {
+      continue;
+    }
     if (video) {
       if (video.ended) return;
       if (video.paused) {
@@ -469,15 +688,23 @@ async function waitVideoEnd() {
   }
 }
 
+async function remuteAfterPopup() {
+  lastUIMutedVideoKey = null;
+  await sleep(200);
+  await muteVideo();
+  await sleep(300);
+  await muteVideo();
+}
+
 async function handlePopupQuestion(attempt) {
   try {
-    const popup = document.querySelector('.bplayer-question-wrap');
-    if (!popup || window.getComputedStyle(popup).display === 'none') return false;
+    const popup = getVisiblePopup();
+    if (!popup) return false;
 
     sendStatus('答题弹窗...', 'running');
     await sleep(2000);
 
-    const allOpts = [...popup.querySelectorAll('.options .option-item')];
+    const allOpts = [...popup.querySelectorAll('.options .option-item')].filter(isVisible);
     const opts = allOpts.filter(o => {
       const c = o.querySelector('.option-item-content');
       return c && c.textContent && c.textContent.trim().length > 0;
@@ -491,10 +718,6 @@ async function handlePopupQuestion(attempt) {
 
     function isSelected(o) {
       return o.classList.contains('active') || o.classList.contains('selected') || o.classList.contains('checked') || o.getAttribute('aria-checked') === 'true';
-    }
-
-    function isVisible(el) {
-      return !!el && window.getComputedStyle(el).display !== 'none' && window.getComputedStyle(el).visibility !== 'hidden';
     }
 
     function clearSelectedOptions() {
@@ -522,8 +745,7 @@ async function handlePopupQuestion(attempt) {
       clearSelectedOptions();
       await sleep(200);
       for (const o of opts) {
-        const selected = o.classList.contains('active') || o.classList.contains('selected') || o.classList.contains('checked') || o.getAttribute('aria-checked') === 'true';
-        if (selected) {
+        if (isSelected(o)) {
           const ok = await ensureOptionSelected(o, false);
           if (!ok) console.log('[Auto] option clear may have failed');
         }
@@ -547,7 +769,7 @@ async function handlePopupQuestion(attempt) {
     }
 
     await sleep(500);
-    const commit = popup.querySelector('.commit.bplayer-btn');
+    const commit = [...popup.querySelectorAll('.commit.bplayer-btn')].find(isVisible) || popup.querySelector('.commit.bplayer-btn');
     if (!commit) {
       console.log('[Auto] No commit button found');
       return false;
@@ -558,7 +780,7 @@ async function handlePopupQuestion(attempt) {
     for (let i = 0; i < 10; i++) {
       await sleep(500);
       const resultWrap = popup.querySelector('.result');
-      const completeBtn = popup.querySelector('.complete.bplayer-btn');
+      const completeBtn = [...popup.querySelectorAll('.complete.bplayer-btn')].find(isVisible) || popup.querySelector('.complete.bplayer-btn');
       const correctEl = popup.querySelector('.answer-image.correct');
       const wrongTime = popup.querySelector('.wrong-time');
       const correctVisible = isVisible(correctEl);
@@ -573,6 +795,7 @@ async function handlePopupQuestion(attempt) {
             click(completeBtn);
             await sleep(1000);
           }
+          await remuteAfterPopup();
           return true;
         }
         break;
@@ -580,9 +803,10 @@ async function handlePopupQuestion(attempt) {
     }
 
     sendStatus(resultVisible ? '回答错误，等待重试...' : '提交后未检测到结果，等待重试...', 'running');
-    const done = popup.querySelector('.complete.bplayer-btn');
+    const done = [...popup.querySelectorAll('.complete.bplayer-btn')].find(isVisible) || popup.querySelector('.complete.bplayer-btn');
     if (done && isVisible(done)) click(done);
-    await sleep(15000);
+    await remuteAfterPopup();
+    await sleep(2000);
     return true;
   } catch (err) {
     console.error('[Auto] handlePopupQuestion error:', err);
@@ -625,6 +849,42 @@ async function getExams() {
   return exams;
 }
 
+function readExamDomQuestions() {
+  const rows = [...document.querySelectorAll('.test-paper-question, .question-item, .exam-question, [du-repeat*="question"], .paper-subject')];
+  const source = rows.length ? rows : [...document.querySelectorAll('.option-item, .exam-option')]
+    .map(el => el.closest('li, .form-group, .question, .exam-item, .panel, .paper-subject'))
+    .filter((el, idx, arr) => el && arr.indexOf(el) === idx);
+
+  return source.map((el, index) => {
+    const titleEl = el.querySelector('.question-title, .title, .stem, .subject-title, [class*="question"]') || el;
+    const options = [...el.querySelectorAll('.option-item, .exam-option, label, li')]
+      .map(opt => opt.textContent.trim().replace(/\s+/g, ' '))
+      .filter(Boolean);
+
+    return {
+      index: index + 1,
+      text: titleEl.textContent.trim().replace(/\s+/g, ' '),
+      options
+    };
+  }).filter(q => q.text || q.options.length);
+}
+
+async function saveExamCapture(capture) {
+  const stored = await chrome.storage.local.get(['examCaptures']);
+  const captures = Array.isArray(stored.examCaptures) ? stored.examCaptures : [];
+  captures.push({
+    capturedAt: new Date().toISOString(),
+    url: window.location.href,
+    title: document.title,
+    ...capture
+  });
+  await chrome.storage.local.set({
+    examCaptures: captures,
+    lastExamCaptureAt: captures[captures.length - 1].capturedAt
+  });
+  sendStatus(`已抓取考试数据 ${captures.length} 份`, 'info');
+}
+
 async function takeExam(examBtn) {
   sendStatus('进入考试...', 'running');
   click(examBtn); await sleep(3000);
@@ -641,9 +901,19 @@ async function takeExam(examBtn) {
           type: 'fetchExamQuestions',
           url: `${window.location.origin}/train/cms/paper/start-do-paper-or-test.gson?paperId=${m[1]}`,
           cookies: resp.cookies
+        }, async apiResp => {
+          await saveExamCapture({
+            paperId: decodeURIComponent(m[1]),
+            apiUrl: `${window.location.origin}/train/cms/paper/start-do-paper-or-test.gson?paperId=${m[1]}`,
+            api: apiResp?.questions || null,
+            apiError: apiResp?.error || null,
+            domQuestions: readExamDomQuestions()
+          });
         });
       }
     });
+  } else {
+    await saveExamCapture({ api: null, apiError: 'paperId not found', domQuestions: readExamDomQuestions() });
   }
 
   await answerExam();
@@ -797,6 +1067,21 @@ async function run(step) {
 // =====================================================
 
 (async function init() {
+  ensurePlayerObserver();
+  startAutoMuteLoop();
+  startActivityLoop();
+  startMediaBindingLoop();
+  setTimeout(() => {
+    startAutoPlayChecks();
+    startAutoMuteLoop();
+    startActivityLoop();
+    startMediaBindingLoop();
+  }, 1000);
+
+  // Provider iframes only need media recovery. Do not run page navigation
+  // state machine inside third-party player frames.
+  if (!IS_TOP_FRAME) return;
+
   // Cache course/exam counts (retry after delay for AngularJS rendering)
   async function cacheCounts() {
     // Try Angular selector first, then text fallback
@@ -835,6 +1120,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse({ ok: true });
     return;
   }
+
+  if (!IS_TOP_FRAME) return;
 
   if (msg.type === 'start') {
     if (isRunning) {

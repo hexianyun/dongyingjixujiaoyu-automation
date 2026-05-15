@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const progressText = document.getElementById('progressText');
   const examCountEl = document.getElementById('examCount');
   const studyingCountEl = document.getElementById('studyingCount');
+  const exportCaptureBtn = document.getElementById('exportCaptureBtn');
+  const clearCaptureBtn = document.getElementById('clearCaptureBtn');
+  const captureInfo = document.getElementById('captureInfo');
 
   // Check if automation is already running
   chrome.storage.local.get(['autoStep'], function(result) {
@@ -37,10 +40,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
   refreshCounts();
 
+  function refreshCaptureInfo() {
+    chrome.storage.local.get(['examCaptures', 'lastExamCaptureAt'], function(data) {
+      const count = Array.isArray(data.examCaptures) ? data.examCaptures.length : 0;
+      const last = data.lastExamCaptureAt ? new Date(data.lastExamCaptureAt).toLocaleString() : '--';
+      captureInfo.textContent = `抓取数据：${count} 份，最后：${last}`;
+    });
+  }
+
+  refreshCaptureInfo();
+
   // Listen for status from content script
   chrome.runtime.onMessage.addListener(function(message) {
     if (message.type === 'status') {
       updateStatus(message.text, message.status);
+      refreshCaptureInfo();
     } else if (message.type === 'progress') {
       updateProgress(message.value, message.text);
     }
@@ -156,5 +170,32 @@ document.addEventListener('DOMContentLoaded', function() {
     await chrome.storage.local.remove(['autoStep']);
     resetUI();
     updateStatus('已停止', 'error');
+  });
+  exportCaptureBtn.addEventListener('click', function() {
+    chrome.storage.local.get(['examCaptures'], function(data) {
+      const captures = Array.isArray(data.examCaptures) ? data.examCaptures : [];
+      if (!captures.length) {
+        updateStatus('暂无抓取数据', 'error');
+        return;
+      }
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      chrome.runtime.sendMessage({
+        type: 'downloadText',
+        filename: `exam-capture-${stamp}.json`,
+        text: JSON.stringify(captures, null, 2)
+      }, function(resp) {
+        if (chrome.runtime.lastError || resp?.error) {
+          updateStatus('导出失败: ' + (chrome.runtime.lastError?.message || resp.error), 'error');
+          return;
+        }
+        updateStatus(`已导出 ${captures.length} 份抓取数据`, 'info');
+      });
+    });
+  });
+
+  clearCaptureBtn.addEventListener('click', async function() {
+    await chrome.storage.local.remove(['examCaptures', 'lastExamCaptureAt']);
+    refreshCaptureInfo();
+    updateStatus('已清空抓取数据', 'info');
   });
 });

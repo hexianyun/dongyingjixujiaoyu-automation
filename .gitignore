@@ -2,3 +2,9 @@ node_modules/
 .DS_Store
 *.log
 test-results/
+standalone/node_modules/
+standalone/dist/
+standalone/dist-electron/
+standalone/traces/
+standalone/exam-captures/
+standalone/.profile*/

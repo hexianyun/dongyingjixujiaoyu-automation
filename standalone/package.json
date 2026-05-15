@@ -1,0 +1,54 @@
+{
+  "name": "yxlearning-standalone-helper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone Chromium learning helper for the CTF yxlearning sandbox.",
+  "type": "module",
+  "main": "src/electron-main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "start:auto": "set AUTO_CONTINUE=1&& set ALLOW_EXAM_SUBMIT=1&& electron .",
+    "start:exam": "set EXAMS_ONLY=1&& set AUTO_CONTINUE=1&& electron .",
+    "start:exam:submit": "set EXAMS_ONLY=1&& set AUTO_CONTINUE=1&& set ALLOW_EXAM_SUBMIT=1&& electron .",
+    "start:playwright": "node src/main.js",
+    "check:exam-page": "node src/check-exam-page.js",
+    "build:exe": "electron-builder --win dir --x64",
+    "build:playwright-exe": "node scripts/build-exe.js",
+    "install-browser": "set PLAYWRIGHT_BROWSERS_PATH=0&& playwright install chromium"
+  },
+  "build": {
+    "appId": "com.yxlearning.helper",
+    "productName": "东营继续教育助手",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "src/electron-main.cjs",
+      "src/electron-preload.cjs",
+      "src/electron-automation.cjs",
+      "src/electron-shell.html",
+      "logo.gif",
+      "logo.png",
+      "dyzs.ico",
+      "package.json",
+      "!node_modules/playwright-core/.local-browsers"
+    ],
+    "win": {
+      "icon": "dyzs.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        "dir"
+      ],
+      "artifactName": "yxlearning-helper.exe"
+    }
+  },
+  "dependencies": {
+    "playwright": "^1.52.0"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^6.19.0",
+    "electron": "^42.0.1",
+    "electron-builder": "^26.8.1",
+    "esbuild": "^0.28.0"
+  }
+}

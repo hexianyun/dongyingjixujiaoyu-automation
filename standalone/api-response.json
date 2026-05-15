@@ -1,0 +1,1501 @@
+{
+  "respCode": 200,
+  "respDesc": "获取成功",
+  "attribute": {
+    "data": {
+      "endTime": "1778802455000",
+      "paperId": "979b1248-0f27-4537-adf7-fbc4de9a59ef",
+      "paperTypeId": "5425bfe8-e489-4c18-9c52-a54fe523be5e",
+      "paperNo": null,
+      "paperName": "2026年度习近平新时代中国特色社会主义思想专题试卷",
+      "paperSource": null,
+      "answerTime": 90,
+      "totalScore": 100,
+      "passScore": 80,
+      "examType": 0,
+      "illustrate": "本试卷包含判断题、单选题和多选题3种题型，共15题，考试时间为90分钟，满分100分，及格分数80分。",
+      "createTime": 1775810577000,
+      "projectId": "z211",
+      "modifyTime": 1775811375000,
+      "isDelete": 0,
+      "questionStemRPS": [
+        {
+          "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+          "questionStemName": "判断题",
+          "score": 5,
+          "paperId": "979b1248-0f27-4537-adf7-fbc4de9a59ef",
+          "sort": 0,
+          "paperQuestionRPS": [
+            {
+              "paperQuestionId": "0fa49728-f4ae-4a35-9a8a-2cb20f65e31f",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "党和政府的一切工作，都是为了老百姓过上更加幸福的生活。",
+              "type": 1,
+              "difficulty": 1,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 5,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "d3168a16-ff8a-4993-b0b9-b2a895f529fa",
+                  "paperQuestionId": "0fa49728-f4ae-4a35-9a8a-2cb20f65e31f",
+                  "optionNo": 2,
+                  "context": "错",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "ed2c70b5-f89d-4a1c-aa1d-a1d0574fc499",
+                  "paperQuestionId": "0fa49728-f4ae-4a35-9a8a-2cb20f65e31f",
+                  "optionNo": 1,
+                  "context": "对",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+              "sort": 0,
+              "questionId": "0fa49728-f4ae-4a35-9a8a-2cb20f65e31f"
+            },
+            {
+              "paperQuestionId": "2321a691-e7fe-417b-b51b-06f0ab62b34c",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "健全社保基金安全监管体系，要坚持制度的统一性和规范性，坚持国家顶层设计，增强制度的刚性约束，加强对制度运行的管理监督。",
+              "type": 1,
+              "difficulty": 1,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 5,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "8f87d894-e7bc-4e00-8e68-9aee0fd661ff",
+                  "paperQuestionId": "2321a691-e7fe-417b-b51b-06f0ab62b34c",
+                  "optionNo": 1,
+                  "context": "对",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "1ee63602-7003-4e4f-a0a9-17a407fe6632",
+                  "paperQuestionId": "2321a691-e7fe-417b-b51b-06f0ab62b34c",
+                  "optionNo": 2,
+                  "context": "错",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+              "sort": 1,
+              "questionId": "2321a691-e7fe-417b-b51b-06f0ab62b34c"
+            },
+            {
+              "paperQuestionId": "27c0ca99-b0e7-4c9a-8f29-2f876845d223",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "我们坚持人民至上，坚持共同富裕，把增进民生福祉、促进社会公平作为发展社会保障事业的根本出发点和落脚点，使改革发展成果更多更公平惠及全体人民。",
+              "type": 1,
+              "difficulty": 1,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 5,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "5269973e-74eb-4f36-ac60-81f87e082d49",
+                  "paperQuestionId": "27c0ca99-b0e7-4c9a-8f29-2f876845d223",
+                  "optionNo": 2,
+                  "context": "错",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "96ee06bc-8127-415e-b624-1882041f7d8f",
+                  "paperQuestionId": "27c0ca99-b0e7-4c9a-8f29-2f876845d223",
+                  "optionNo": 1,
+                  "context": "对",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+              "sort": 2,
+              "questionId": "27c0ca99-b0e7-4c9a-8f29-2f876845d223"
+            },
+            {
+              "paperQuestionId": "778be1f1-d3c0-42e7-b695-059b032f3d91",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "我们要加大再分配力度，强化互助共济功能，把更多人纳入社会保障体系，为广大人民群众提供更可靠更充分的保障，不断满足人民群众多层次多样化需求，完善覆盖全民、统筹城乡、公平统一、可持续的多层次社会保障体系，进一步织密社会保障安全网。",
+              "type": 1,
+              "difficulty": 1,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 5,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "92c033a8-1bfc-44b7-8ab7-b1760cf0050a",
+                  "paperQuestionId": "778be1f1-d3c0-42e7-b695-059b032f3d91",
+                  "optionNo": 1,
+                  "context": "对",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "e99f236f-e4f4-42b9-8303-23d653942063",
+                  "paperQuestionId": "778be1f1-d3c0-42e7-b695-059b032f3d91",
+                  "optionNo": 2,
+                  "context": "错",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+              "sort": 3,
+              "questionId": "778be1f1-d3c0-42e7-b695-059b032f3d91"
+            },
+            {
+              "paperQuestionId": "79f5c7ae-9780-4650-97a0-0a811b41e878",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "推进社会保障法治化，要加强社会保障立法工作，依法落实各级政府和用人单位、个人、社会的社会保障权利、义务、责任。",
+              "type": 1,
+              "difficulty": 1,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 5,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "3cd01842-82a6-4e07-ae95-f899606a6b87",
+                  "paperQuestionId": "79f5c7ae-9780-4650-97a0-0a811b41e878",
+                  "optionNo": 2,
+                  "context": "错",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "07303e45-93d4-4abd-b287-71d14b72680b",
+                  "paperQuestionId": "79f5c7ae-9780-4650-97a0-0a811b41e878",
+                  "optionNo": 1,
+                  "context": "对",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+              "sort": 4,
+              "questionId": "79f5c7ae-9780-4650-97a0-0a811b41e878"
+            },
+            {
+              "paperQuestionId": "9daac466-18ae-4a85-897d-72a11d1f531d",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "人工智能可以通过预测就业市场趋势、发现再培训或技能提升的机会及提供相关建议，改变社会保障体系的就业服务质量量。",
+              "type": 1,
+              "difficulty": 1,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 5,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "ffeb0a5a-d85e-49a7-8f46-373d0aa9ca5a",
+                  "paperQuestionId": "9daac466-18ae-4a85-897d-72a11d1f531d",
+                  "optionNo": 2,
+                  "context": "错",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "0fac6358-97fd-43ff-bf83-042c710481cd",
+                  "paperQuestionId": "9daac466-18ae-4a85-897d-72a11d1f531d",
+                  "optionNo": 1,
+                  "context": "对",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+              "sort": 5,
+              "questionId": "9daac466-18ae-4a85-897d-72a11d1f531d"
+            }
+          ],
+          "listPaperQuestionRP": [
+            {
+              "paperQuestionId": "0fa49728-f4ae-4a35-9a8a-2cb20f65e31f",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "党和政府的一切工作，都是为了老百姓过上更加幸福的生活。",
+              "type": 1,
+              "difficulty": 1,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 5,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "d3168a16-ff8a-4993-b0b9-b2a895f529fa",
+                  "paperQuestionId": "0fa49728-f4ae-4a35-9a8a-2cb20f65e31f",
+                  "optionNo": 2,
+                  "context": "错",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "ed2c70b5-f89d-4a1c-aa1d-a1d0574fc499",
+                  "paperQuestionId": "0fa49728-f4ae-4a35-9a8a-2cb20f65e31f",
+                  "optionNo": 1,
+                  "context": "对",
+                  "standardAnswer": 1,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+              "sort": 0,
+              "questionId": "0fa49728-f4ae-4a35-9a8a-2cb20f65e31f"
+            },
+            {
+              "paperQuestionId": "2321a691-e7fe-417b-b51b-06f0ab62b34c",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "健全社保基金安全监管体系，要坚持制度的统一性和规范性，坚持国家顶层设计，增强制度的刚性约束，加强对制度运行的管理监督。",
+              "type": 1,
+              "difficulty": 1,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 5,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "8f87d894-e7bc-4e00-8e68-9aee0fd661ff",
+                  "paperQuestionId": "2321a691-e7fe-417b-b51b-06f0ab62b34c",
+                  "optionNo": 1,
+                  "context": "对",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "1ee63602-7003-4e4f-a0a9-17a407fe6632",
+                  "paperQuestionId": "2321a691-e7fe-417b-b51b-06f0ab62b34c",
+                  "optionNo": 2,
+                  "context": "错",
+                  "standardAnswer": 0,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+              "sort": 1,
+              "questionId": "2321a691-e7fe-417b-b51b-06f0ab62b34c"
+            },
+            {
+              "paperQuestionId": "27c0ca99-b0e7-4c9a-8f29-2f876845d223",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "我们坚持人民至上，坚持共同富裕，把增进民生福祉、促进社会公平作为发展社会保障事业的根本出发点和落脚点，使改革发展成果更多更公平惠及全体人民。",
+              "type": 1,
+              "difficulty": 1,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 5,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "5269973e-74eb-4f36-ac60-81f87e082d49",
+                  "paperQuestionId": "27c0ca99-b0e7-4c9a-8f29-2f876845d223",
+                  "optionNo": 2,
+                  "context": "错",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "96ee06bc-8127-415e-b624-1882041f7d8f",
+                  "paperQuestionId": "27c0ca99-b0e7-4c9a-8f29-2f876845d223",
+                  "optionNo": 1,
+                  "context": "对",
+                  "standardAnswer": 1,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+              "sort": 2,
+              "questionId": "27c0ca99-b0e7-4c9a-8f29-2f876845d223"
+            },
+            {
+              "paperQuestionId": "778be1f1-d3c0-42e7-b695-059b032f3d91",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "我们要加大再分配力度，强化互助共济功能，把更多人纳入社会保障体系，为广大人民群众提供更可靠更充分的保障，不断满足人民群众多层次多样化需求，完善覆盖全民、统筹城乡、公平统一、可持续的多层次社会保障体系，进一步织密社会保障安全网。",
+              "type": 1,
+              "difficulty": 1,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 5,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "92c033a8-1bfc-44b7-8ab7-b1760cf0050a",
+                  "paperQuestionId": "778be1f1-d3c0-42e7-b695-059b032f3d91",
+                  "optionNo": 1,
+                  "context": "对",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "e99f236f-e4f4-42b9-8303-23d653942063",
+                  "paperQuestionId": "778be1f1-d3c0-42e7-b695-059b032f3d91",
+                  "optionNo": 2,
+                  "context": "错",
+                  "standardAnswer": 0,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+              "sort": 3,
+              "questionId": "778be1f1-d3c0-42e7-b695-059b032f3d91"
+            },
+            {
+              "paperQuestionId": "79f5c7ae-9780-4650-97a0-0a811b41e878",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "推进社会保障法治化，要加强社会保障立法工作，依法落实各级政府和用人单位、个人、社会的社会保障权利、义务、责任。",
+              "type": 1,
+              "difficulty": 1,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 5,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "3cd01842-82a6-4e07-ae95-f899606a6b87",
+                  "paperQuestionId": "79f5c7ae-9780-4650-97a0-0a811b41e878",
+                  "optionNo": 2,
+                  "context": "错",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "07303e45-93d4-4abd-b287-71d14b72680b",
+                  "paperQuestionId": "79f5c7ae-9780-4650-97a0-0a811b41e878",
+                  "optionNo": 1,
+                  "context": "对",
+                  "standardAnswer": 1,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+              "sort": 4,
+              "questionId": "79f5c7ae-9780-4650-97a0-0a811b41e878"
+            },
+            {
+              "paperQuestionId": "9daac466-18ae-4a85-897d-72a11d1f531d",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "人工智能可以通过预测就业市场趋势、发现再培训或技能提升的机会及提供相关建议，改变社会保障体系的就业服务质量量。",
+              "type": 1,
+              "difficulty": 1,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 5,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "ffeb0a5a-d85e-49a7-8f46-373d0aa9ca5a",
+                  "paperQuestionId": "9daac466-18ae-4a85-897d-72a11d1f531d",
+                  "optionNo": 2,
+                  "context": "错",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "0fac6358-97fd-43ff-bf83-042c710481cd",
+                  "paperQuestionId": "9daac466-18ae-4a85-897d-72a11d1f531d",
+                  "optionNo": 1,
+                  "context": "对",
+                  "standardAnswer": 1,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "7cadd574-7ad5-4328-bda7-f6042914f948",
+              "sort": 5,
+              "questionId": "9daac466-18ae-4a85-897d-72a11d1f531d"
+            }
+          ]
+        },
+        {
+          "questionStemId": "e9560b96-7463-4b66-b75c-d0376ab0609a",
+          "questionStemName": "单选题",
+          "score": 6,
+          "paperId": "979b1248-0f27-4537-adf7-fbc4de9a59ef",
+          "sort": 1,
+          "paperQuestionRPS": [
+            {
+              "paperQuestionId": "0b8aeb88-0180-450d-85f0-0684d7362bba",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "“量子信息”属于（）。",
+              "type": 2,
+              "difficulty": 2,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 6,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "5aa961d3-d6c6-4c04-aa6b-be0ac691ac30",
+                  "paperQuestionId": "0b8aeb88-0180-450d-85f0-0684d7362bba",
+                  "optionNo": 2,
+                  "context": "传统产业",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "fb49bade-c5f4-491f-b3a4-2e876df54ab8",
+                  "paperQuestionId": "0b8aeb88-0180-450d-85f0-0684d7362bba",
+                  "optionNo": 4,
+                  "context": "未来产业",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "6490ecff-d634-4858-89eb-e7c4ba8c5c1d",
+                  "paperQuestionId": "0b8aeb88-0180-450d-85f0-0684d7362bba",
+                  "optionNo": 1,
+                  "context": "战略性新兴产业",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "ea841c0d-82a9-4376-a1eb-6be460be5f56",
+                  "paperQuestionId": "0b8aeb88-0180-450d-85f0-0684d7362bba",
+                  "optionNo": 3,
+                  "context": "现代服务业",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "e9560b96-7463-4b66-b75c-d0376ab0609a",
+              "sort": 0,
+              "questionId": "0b8aeb88-0180-450d-85f0-0684d7362bba"
+            },
+            {
+              "paperQuestionId": "efe6dfb5-38d3-49fc-b3c4-8c5a39b35970",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "党的二十届四中全会公报中，“人民”出现了（）次。",
+              "type": 2,
+              "difficulty": 2,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 6,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "c8b6383c-9ad0-49cc-9c7e-220ebafc952d",
+                  "paperQuestionId": "efe6dfb5-38d3-49fc-b3c4-8c5a39b35970",
+                  "optionNo": 1,
+                  "context": "11",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "dbf2898e-81c0-4475-add0-393f49f609ec",
+                  "paperQuestionId": "efe6dfb5-38d3-49fc-b3c4-8c5a39b35970",
+                  "optionNo": 4,
+                  "context": "16",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "87154764-58c4-4624-bcd3-f3cc21f001fb",
+                  "paperQuestionId": "efe6dfb5-38d3-49fc-b3c4-8c5a39b35970",
+                  "optionNo": 2,
+                  "context": "13",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "f507c34a-185c-4f37-af41-c15a784a68ff",
+                  "paperQuestionId": "efe6dfb5-38d3-49fc-b3c4-8c5a39b35970",
+                  "optionNo": 3,
+                  "context": "14",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "e9560b96-7463-4b66-b75c-d0376ab0609a",
+              "sort": 1,
+              "questionId": "efe6dfb5-38d3-49fc-b3c4-8c5a39b35970"
+            },
+            {
+              "paperQuestionId": "6f963eeb-6108-46da-9aca-8642c814479a",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "《深入学习习近平关于社会保障的重要论述》正文共（）个章节。",
+              "type": 2,
+              "difficulty": 2,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 6,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "b0cc6475-8b94-48d3-b0a5-dee4aa905521",
+                  "paperQuestionId": "6f963eeb-6108-46da-9aca-8642c814479a",
+                  "optionNo": 1,
+                  "context": "10",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "d70ac3cb-0390-407b-95b7-3ef2f98ae333",
+                  "paperQuestionId": "6f963eeb-6108-46da-9aca-8642c814479a",
+                  "optionNo": 4,
+                  "context": "15",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "c3dd3c2a-64c3-473f-965f-ef8326e14ed3",
+                  "paperQuestionId": "6f963eeb-6108-46da-9aca-8642c814479a",
+                  "optionNo": 2,
+                  "context": "12",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "db7673a0-ab3d-4f46-ad4f-ec9dab8b3230",
+                  "paperQuestionId": "6f963eeb-6108-46da-9aca-8642c814479a",
+                  "optionNo": 3,
+                  "context": "14",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "e9560b96-7463-4b66-b75c-d0376ab0609a",
+              "sort": 2,
+              "questionId": "6f963eeb-6108-46da-9aca-8642c814479a"
+            },
+            {
+              "paperQuestionId": "9d1d9f7a-0f5a-4974-b995-bf4caba1061f",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "人工智能可以是造福人类的国际公共产品。要广泛开展人工智能国际合作，帮助全球（）国家加强技术能力建设，为弥合全球智能鸿沟作出中国贡献。",
+              "type": 2,
+              "difficulty": 2,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 6,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "14d4adfa-6e36-4c3f-af9c-71e688aee703",
+                  "paperQuestionId": "9d1d9f7a-0f5a-4974-b995-bf4caba1061f",
+                  "optionNo": 1,
+                  "context": "四方",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "1ad1a76f-0e68-4d13-b9cf-8eb0c9fb7e69",
+                  "paperQuestionId": "9d1d9f7a-0f5a-4974-b995-bf4caba1061f",
+                  "optionNo": 2,
+                  "context": "西方",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "19cd1d2b-bc1c-4cb0-9a0b-def13baf4106",
+                  "paperQuestionId": "9d1d9f7a-0f5a-4974-b995-bf4caba1061f",
+                  "optionNo": 4,
+                  "context": "南方",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "f1f1cada-6f98-4ee3-b34b-30850fbf710f",
+                  "paperQuestionId": "9d1d9f7a-0f5a-4974-b995-bf4caba1061f",
+                  "optionNo": 3,
+                  "context": "东方",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "e9560b96-7463-4b66-b75c-d0376ab0609a",
+              "sort": 3,
+              "questionId": "9d1d9f7a-0f5a-4974-b995-bf4caba1061f"
+            },
+            {
+              "paperQuestionId": "b57e93f6-a6b4-4846-b83f-f3fc520013cf",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "根据《国务院关于深入实施“人工智能+”行动的意见》，到（）年，全面步入智能经济和智能社会发展新阶段，为基本实现社会主义现代化提供有力支撑。",
+              "type": 2,
+              "difficulty": 2,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 6,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "91a6919b-4fbc-427a-93be-fa0d4091c3dd",
+                  "paperQuestionId": "b57e93f6-a6b4-4846-b83f-f3fc520013cf",
+                  "optionNo": 4,
+                  "context": "2040",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "07d452d0-ae7a-4156-9af4-888029c3eb35",
+                  "paperQuestionId": "b57e93f6-a6b4-4846-b83f-f3fc520013cf",
+                  "optionNo": 1,
+                  "context": "2027",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "3b66fb9b-9c28-45ae-a3ae-ee25702d8229",
+                  "paperQuestionId": "b57e93f6-a6b4-4846-b83f-f3fc520013cf",
+                  "optionNo": 3,
+                  "context": "2035",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "14f889f5-efbc-42b5-8244-a984e0c06d7a",
+                  "paperQuestionId": "b57e93f6-a6b4-4846-b83f-f3fc520013cf",
+                  "optionNo": 2,
+                  "context": "2030",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "e9560b96-7463-4b66-b75c-d0376ab0609a",
+              "sort": 4,
+              "questionId": "b57e93f6-a6b4-4846-b83f-f3fc520013cf"
+            }
+          ],
+          "listPaperQuestionRP": [
+            {
+              "paperQuestionId": "0b8aeb88-0180-450d-85f0-0684d7362bba",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "“量子信息”属于（）。",
+              "type": 2,
+              "difficulty": 2,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 6,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "5aa961d3-d6c6-4c04-aa6b-be0ac691ac30",
+                  "paperQuestionId": "0b8aeb88-0180-450d-85f0-0684d7362bba",
+                  "optionNo": 2,
+                  "context": "传统产业",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "fb49bade-c5f4-491f-b3a4-2e876df54ab8",
+                  "paperQuestionId": "0b8aeb88-0180-450d-85f0-0684d7362bba",
+                  "optionNo": 4,
+                  "context": "未来产业",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "6490ecff-d634-4858-89eb-e7c4ba8c5c1d",
+                  "paperQuestionId": "0b8aeb88-0180-450d-85f0-0684d7362bba",
+                  "optionNo": 1,
+                  "context": "战略性新兴产业",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "ea841c0d-82a9-4376-a1eb-6be460be5f56",
+                  "paperQuestionId": "0b8aeb88-0180-450d-85f0-0684d7362bba",
+                  "optionNo": 3,
+                  "context": "现代服务业",
+                  "standardAnswer": 0,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "e9560b96-7463-4b66-b75c-d0376ab0609a",
+              "sort": 0,
+              "questionId": "0b8aeb88-0180-450d-85f0-0684d7362bba"
+            },
+            {
+              "paperQuestionId": "efe6dfb5-38d3-49fc-b3c4-8c5a39b35970",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "党的二十届四中全会公报中，“人民”出现了（）次。",
+              "type": 2,
+              "difficulty": 2,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 6,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "c8b6383c-9ad0-49cc-9c7e-220ebafc952d",
+                  "paperQuestionId": "efe6dfb5-38d3-49fc-b3c4-8c5a39b35970",
+                  "optionNo": 1,
+                  "context": "11",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "dbf2898e-81c0-4475-add0-393f49f609ec",
+                  "paperQuestionId": "efe6dfb5-38d3-49fc-b3c4-8c5a39b35970",
+                  "optionNo": 4,
+                  "context": "16",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "87154764-58c4-4624-bcd3-f3cc21f001fb",
+                  "paperQuestionId": "efe6dfb5-38d3-49fc-b3c4-8c5a39b35970",
+                  "optionNo": 2,
+                  "context": "13",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "f507c34a-185c-4f37-af41-c15a784a68ff",
+                  "paperQuestionId": "efe6dfb5-38d3-49fc-b3c4-8c5a39b35970",
+                  "optionNo": 3,
+                  "context": "14",
+                  "standardAnswer": 0,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "e9560b96-7463-4b66-b75c-d0376ab0609a",
+              "sort": 1,
+              "questionId": "efe6dfb5-38d3-49fc-b3c4-8c5a39b35970"
+            },
+            {
+              "paperQuestionId": "6f963eeb-6108-46da-9aca-8642c814479a",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "《深入学习习近平关于社会保障的重要论述》正文共（）个章节。",
+              "type": 2,
+              "difficulty": 2,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 6,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "b0cc6475-8b94-48d3-b0a5-dee4aa905521",
+                  "paperQuestionId": "6f963eeb-6108-46da-9aca-8642c814479a",
+                  "optionNo": 1,
+                  "context": "10",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "d70ac3cb-0390-407b-95b7-3ef2f98ae333",
+                  "paperQuestionId": "6f963eeb-6108-46da-9aca-8642c814479a",
+                  "optionNo": 4,
+                  "context": "15",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "c3dd3c2a-64c3-473f-965f-ef8326e14ed3",
+                  "paperQuestionId": "6f963eeb-6108-46da-9aca-8642c814479a",
+                  "optionNo": 2,
+                  "context": "12",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "db7673a0-ab3d-4f46-ad4f-ec9dab8b3230",
+                  "paperQuestionId": "6f963eeb-6108-46da-9aca-8642c814479a",
+                  "optionNo": 3,
+                  "context": "14",
+                  "standardAnswer": 0,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "e9560b96-7463-4b66-b75c-d0376ab0609a",
+              "sort": 2,
+              "questionId": "6f963eeb-6108-46da-9aca-8642c814479a"
+            },
+            {
+              "paperQuestionId": "9d1d9f7a-0f5a-4974-b995-bf4caba1061f",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "人工智能可以是造福人类的国际公共产品。要广泛开展人工智能国际合作，帮助全球（）国家加强技术能力建设，为弥合全球智能鸿沟作出中国贡献。",
+              "type": 2,
+              "difficulty": 2,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 6,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "14d4adfa-6e36-4c3f-af9c-71e688aee703",
+                  "paperQuestionId": "9d1d9f7a-0f5a-4974-b995-bf4caba1061f",
+                  "optionNo": 1,
+                  "context": "四方",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "1ad1a76f-0e68-4d13-b9cf-8eb0c9fb7e69",
+                  "paperQuestionId": "9d1d9f7a-0f5a-4974-b995-bf4caba1061f",
+                  "optionNo": 2,
+                  "context": "西方",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "19cd1d2b-bc1c-4cb0-9a0b-def13baf4106",
+                  "paperQuestionId": "9d1d9f7a-0f5a-4974-b995-bf4caba1061f",
+                  "optionNo": 4,
+                  "context": "南方",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "f1f1cada-6f98-4ee3-b34b-30850fbf710f",
+                  "paperQuestionId": "9d1d9f7a-0f5a-4974-b995-bf4caba1061f",
+                  "optionNo": 3,
+                  "context": "东方",
+                  "standardAnswer": 0,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "e9560b96-7463-4b66-b75c-d0376ab0609a",
+              "sort": 3,
+              "questionId": "9d1d9f7a-0f5a-4974-b995-bf4caba1061f"
+            },
+            {
+              "paperQuestionId": "b57e93f6-a6b4-4846-b83f-f3fc520013cf",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "根据《国务院关于深入实施“人工智能+”行动的意见》，到（）年，全面步入智能经济和智能社会发展新阶段，为基本实现社会主义现代化提供有力支撑。",
+              "type": 2,
+              "difficulty": 2,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 6,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "91a6919b-4fbc-427a-93be-fa0d4091c3dd",
+                  "paperQuestionId": "b57e93f6-a6b4-4846-b83f-f3fc520013cf",
+                  "optionNo": 4,
+                  "context": "2040",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "07d452d0-ae7a-4156-9af4-888029c3eb35",
+                  "paperQuestionId": "b57e93f6-a6b4-4846-b83f-f3fc520013cf",
+                  "optionNo": 1,
+                  "context": "2027",
+                  "standardAnswer": 0,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "3b66fb9b-9c28-45ae-a3ae-ee25702d8229",
+                  "paperQuestionId": "b57e93f6-a6b4-4846-b83f-f3fc520013cf",
+                  "optionNo": 3,
+                  "context": "2035",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "14f889f5-efbc-42b5-8244-a984e0c06d7a",
+                  "paperQuestionId": "b57e93f6-a6b4-4846-b83f-f3fc520013cf",
+                  "optionNo": 2,
+                  "context": "2030",
+                  "standardAnswer": 0,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "e9560b96-7463-4b66-b75c-d0376ab0609a",
+              "sort": 4,
+              "questionId": "b57e93f6-a6b4-4846-b83f-f3fc520013cf"
+            }
+          ]
+        },
+        {
+          "questionStemId": "1a47c580-51b8-4c58-8641-ab9e126618ea",
+          "questionStemName": "多选题",
+          "score": 10,
+          "paperId": "979b1248-0f27-4537-adf7-fbc4de9a59ef",
+          "sort": 2,
+          "paperQuestionRPS": [
+            {
+              "paperQuestionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "中国特色社会保障体系建设的核心经验包括（）。",
+              "type": 3,
+              "difficulty": 3,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 10,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "106451b7-3fef-497a-b1ca-642bc82cd457",
+                  "paperQuestionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6",
+                  "optionNo": 3,
+                  "context": "渐进改革",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "74e4c4d4-08e1-49ea-bc6c-a401aa8aa054",
+                  "paperQuestionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6",
+                  "optionNo": 1,
+                  "context": "党的领导、人民中心",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "a79e2977-b4ee-4a77-8882-9cef7868a274",
+                  "paperQuestionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6",
+                  "optionNo": 4,
+                  "context": "多层次体系",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "961f53ce-08d5-429e-97df-ad276b21da0d",
+                  "paperQuestionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6",
+                  "optionNo": 5,
+                  "context": "数字化服务",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "90f04cf0-e602-4eaf-91cb-f81433906bf5",
+                  "paperQuestionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6",
+                  "optionNo": 2,
+                  "context": "因地制宜",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "1a47c580-51b8-4c58-8641-ab9e126618ea",
+              "sort": 0,
+              "questionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6"
+            },
+            {
+              "paperQuestionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "我们要牢牢把握共同富裕的目标要求，围绕保障和改善民生，在（）、加快建设健康中国、促进人口高质量发展、稳步推进基本公共服务均等化等方面部署一批均衡性可及性强的政策举措。",
+              "type": 3,
+              "difficulty": 3,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 10,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "62bb5016-6116-4d1b-b8ac-79f6e7ed0a6f",
+                  "paperQuestionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84",
+                  "optionNo": 5,
+                  "context": "推动房地产高质量发展",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "30e4a458-5e6c-471f-8c3f-bf68a86bffba",
+                  "paperQuestionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84",
+                  "optionNo": 4,
+                  "context": "健全社会保障体系",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "bb74365d-a5fa-4b10-a74a-0a506d80c01f",
+                  "paperQuestionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84",
+                  "optionNo": 1,
+                  "context": "促进高质量充分就业",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "991283f1-f263-4431-bb70-89add5801a7e",
+                  "paperQuestionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84",
+                  "optionNo": 2,
+                  "context": "完善收入分配制度",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "c06e0ee6-6691-4edb-bf66-0cab3a681efa",
+                  "paperQuestionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84",
+                  "optionNo": 3,
+                  "context": "办好人民满意的教育",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "1a47c580-51b8-4c58-8641-ab9e126618ea",
+              "sort": 1,
+              "questionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84"
+            },
+            {
+              "paperQuestionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "推进社会保障法治化，要从（）各环节加强社会保障工作，在法治轨道上推动社会保障事业健康发展。",
+              "type": 3,
+              "difficulty": 3,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 10,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "d562170a-650d-48e6-a699-a2acf9017ed7",
+                  "paperQuestionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6",
+                  "optionNo": 2,
+                  "context": "执法",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "ed8ea280-b440-4b0b-99e1-90160606a986",
+                  "paperQuestionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6",
+                  "optionNo": 3,
+                  "context": "司法",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "f7b67f03-5819-414e-b2b5-937d45b62478",
+                  "paperQuestionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6",
+                  "optionNo": 1,
+                  "context": "立法",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "398731dd-4733-4c51-89c4-9221906faeb6",
+                  "paperQuestionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6",
+                  "optionNo": 4,
+                  "context": "守法",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "dce227eb-1570-4271-b6e0-151b7ec8a19f",
+                  "paperQuestionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6",
+                  "optionNo": 5,
+                  "context": "废法",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "1a47c580-51b8-4c58-8641-ab9e126618ea",
+              "sort": 2,
+              "questionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6"
+            },
+            {
+              "paperQuestionId": "b3e261d0-974d-476d-943e-caf4d613ba24",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "深入实施“人工智能+”行动的重点领域包括（）。",
+              "type": 3,
+              "difficulty": 3,
+              "analysis": null,
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 10,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "f4b76227-e464-4d37-ad66-382d01988ace",
+                  "paperQuestionId": "b3e261d0-974d-476d-943e-caf4d613ba24",
+                  "optionNo": 2,
+                  "context": "消费提质",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "e231b865-904d-494f-a252-60f50b6a39c1",
+                  "paperQuestionId": "b3e261d0-974d-476d-943e-caf4d613ba24",
+                  "optionNo": 3,
+                  "context": "民生福祉",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "d58e1928-2de3-42f0-8ddd-6c8c1eb14930",
+                  "paperQuestionId": "b3e261d0-974d-476d-943e-caf4d613ba24",
+                  "optionNo": 1,
+                  "context": "科学技术、产业发展",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "cfabf17b-eb79-4cc4-9699-046ccd78d3f9",
+                  "paperQuestionId": "b3e261d0-974d-476d-943e-caf4d613ba24",
+                  "optionNo": 5,
+                  "context": "全球合作",
+                  "standardAnswer": null,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "b92611a1-3bef-4dbe-b952-2eff072afa6d",
+                  "paperQuestionId": "b3e261d0-974d-476d-943e-caf4d613ba24",
+                  "optionNo": 4,
+                  "context": "治理能力",
+                  "standardAnswer": null,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "1a47c580-51b8-4c58-8641-ab9e126618ea",
+              "sort": 3,
+              "questionId": "b3e261d0-974d-476d-943e-caf4d613ba24"
+            }
+          ],
+          "listPaperQuestionRP": [
+            {
+              "paperQuestionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "中国特色社会保障体系建设的核心经验包括（）。",
+              "type": 3,
+              "difficulty": 3,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 10,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "106451b7-3fef-497a-b1ca-642bc82cd457",
+                  "paperQuestionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6",
+                  "optionNo": 3,
+                  "context": "渐进改革",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "74e4c4d4-08e1-49ea-bc6c-a401aa8aa054",
+                  "paperQuestionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6",
+                  "optionNo": 1,
+                  "context": "党的领导、人民中心",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "a79e2977-b4ee-4a77-8882-9cef7868a274",
+                  "paperQuestionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6",
+                  "optionNo": 4,
+                  "context": "多层次体系",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "961f53ce-08d5-429e-97df-ad276b21da0d",
+                  "paperQuestionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6",
+                  "optionNo": 5,
+                  "context": "数字化服务",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "90f04cf0-e602-4eaf-91cb-f81433906bf5",
+                  "paperQuestionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6",
+                  "optionNo": 2,
+                  "context": "因地制宜",
+                  "standardAnswer": 1,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "1a47c580-51b8-4c58-8641-ab9e126618ea",
+              "sort": 0,
+              "questionId": "fb44e5cf-6fe7-402c-8626-a85861994ba6"
+            },
+            {
+              "paperQuestionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "我们要牢牢把握共同富裕的目标要求，围绕保障和改善民生，在（）、加快建设健康中国、促进人口高质量发展、稳步推进基本公共服务均等化等方面部署一批均衡性可及性强的政策举措。",
+              "type": 3,
+              "difficulty": 3,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 10,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "62bb5016-6116-4d1b-b8ac-79f6e7ed0a6f",
+                  "paperQuestionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84",
+                  "optionNo": 5,
+                  "context": "推动房地产高质量发展",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "30e4a458-5e6c-471f-8c3f-bf68a86bffba",
+                  "paperQuestionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84",
+                  "optionNo": 4,
+                  "context": "健全社会保障体系",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "bb74365d-a5fa-4b10-a74a-0a506d80c01f",
+                  "paperQuestionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84",
+                  "optionNo": 1,
+                  "context": "促进高质量充分就业",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "991283f1-f263-4431-bb70-89add5801a7e",
+                  "paperQuestionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84",
+                  "optionNo": 2,
+                  "context": "完善收入分配制度",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "c06e0ee6-6691-4edb-bf66-0cab3a681efa",
+                  "paperQuestionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84",
+                  "optionNo": 3,
+                  "context": "办好人民满意的教育",
+                  "standardAnswer": 1,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "1a47c580-51b8-4c58-8641-ab9e126618ea",
+              "sort": 1,
+              "questionId": "4fdd6456-993a-4dd2-ae90-dfc38dd2cf84"
+            },
+            {
+              "paperQuestionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "推进社会保障法治化，要从（）各环节加强社会保障工作，在法治轨道上推动社会保障事业健康发展。",
+              "type": 3,
+              "difficulty": 3,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 10,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "d562170a-650d-48e6-a699-a2acf9017ed7",
+                  "paperQuestionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6",
+                  "optionNo": 2,
+                  "context": "执法",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "ed8ea280-b440-4b0b-99e1-90160606a986",
+                  "paperQuestionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6",
+                  "optionNo": 3,
+                  "context": "司法",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "f7b67f03-5819-414e-b2b5-937d45b62478",
+                  "paperQuestionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6",
+                  "optionNo": 1,
+                  "context": "立法",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "398731dd-4733-4c51-89c4-9221906faeb6",
+                  "paperQuestionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6",
+                  "optionNo": 4,
+                  "context": "守法",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "dce227eb-1570-4271-b6e0-151b7ec8a19f",
+                  "paperQuestionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6",
+                  "optionNo": 5,
+                  "context": "废法",
+                  "standardAnswer": 0,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "1a47c580-51b8-4c58-8641-ab9e126618ea",
+              "sort": 2,
+              "questionId": "bf387581-ac5f-4686-8e2a-907d0b21f1a6"
+            },
+            {
+              "paperQuestionId": "b3e261d0-974d-476d-943e-caf4d613ba24",
+              "questBankId": "dc62c27e-d17d-4aa3-a73a-7511157b3c5e",
+              "questionName": "深入实施“人工智能+”行动的重点领域包括（）。",
+              "type": 3,
+              "difficulty": 3,
+              "analysis": "",
+              "projectId": "z211",
+              "saveToBank": null,
+              "score": 10,
+              "paperOptionRPS": [
+                {
+                  "paperOptionId": "f4b76227-e464-4d37-ad66-382d01988ace",
+                  "paperQuestionId": "b3e261d0-974d-476d-943e-caf4d613ba24",
+                  "optionNo": 2,
+                  "context": "消费提质",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "e231b865-904d-494f-a252-60f50b6a39c1",
+                  "paperQuestionId": "b3e261d0-974d-476d-943e-caf4d613ba24",
+                  "optionNo": 3,
+                  "context": "民生福祉",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "d58e1928-2de3-42f0-8ddd-6c8c1eb14930",
+                  "paperQuestionId": "b3e261d0-974d-476d-943e-caf4d613ba24",
+                  "optionNo": 1,
+                  "context": "科学技术、产业发展",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "cfabf17b-eb79-4cc4-9699-046ccd78d3f9",
+                  "paperQuestionId": "b3e261d0-974d-476d-943e-caf4d613ba24",
+                  "optionNo": 5,
+                  "context": "全球合作",
+                  "standardAnswer": 1,
+                  "showContext": null
+                },
+                {
+                  "paperOptionId": "b92611a1-3bef-4dbe-b952-2eff072afa6d",
+                  "paperQuestionId": "b3e261d0-974d-476d-943e-caf4d613ba24",
+                  "optionNo": 4,
+                  "context": "治理能力",
+                  "standardAnswer": 1,
+                  "showContext": null
+                }
+              ],
+              "myAnswerRPS": null,
+              "showIndex": null,
+              "rightOption": null,
+              "myOption": null,
+              "questionStemId": "1a47c580-51b8-4c58-8641-ab9e126618ea",
+              "sort": 3,
+              "questionId": "b3e261d0-974d-476d-943e-caf4d613ba24"
+            }
+          ]
+        }
+      ],
+      "faceCheckExamList": null,
+      "score": 0,
+      "rightQuestionNum": 0,
+      "currTime": 1778797497000,
+      "overDuration": 4957311,
+      "isDefaultIllustrate": 1,
+      "isRandom": 0,
+      "randomPaperRP": null,
+      "blankQuestionNum": 0,
+      "optionSortType": 2,
+      "totalQuestionNum": 15
+    }
+  }
+}

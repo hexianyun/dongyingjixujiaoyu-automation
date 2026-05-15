@@ -8,11 +8,18 @@
     "activeTab",
     "scripting",
     "tabs",
-    "cookies"
+    "cookies",
+    "downloads"
   ],
   "host_permissions": [
     "http://sddy.gxk.yxlearning.com/*",
-    "https://sddy.gxk.yxlearning.com/*"
+    "https://sddy.gxk.yxlearning.com/*",
+    "http://*.bokecc.com/*",
+    "https://*.bokecc.com/*",
+    "http://*.polyv.net/*",
+    "https://*.polyv.net/*",
+    "http://*.baijiayun.com/*",
+    "https://*.baijiayun.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -29,10 +36,17 @@
     {
       "matches": [
         "http://sddy.gxk.yxlearning.com/*",
-        "https://sddy.gxk.yxlearning.com/*"
+        "https://sddy.gxk.yxlearning.com/*",
+        "http://*.bokecc.com/*",
+        "https://*.bokecc.com/*",
+        "http://*.polyv.net/*",
+        "https://*.polyv.net/*",
+        "http://*.baijiayun.com/*",
+        "https://*.baijiayun.com/*"
       ],
       "js": ["content.js"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ],
   "icons": {

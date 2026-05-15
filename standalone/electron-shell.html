@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>东营继续教育助手</title>
+<style>
+:root {
+  --bg: #eef6ff;
+  --panel: rgba(255, 255, 255, 0.92);
+  --line: #d9e7f7;
+  --text: #17233f;
+  --muted: #6d7c95;
+  --blue: #2f7df4;
+  --orange: #f59e0b;
+  --green: #18b46b;
+  --shadow: 0 18px 45px rgba(23, 54, 97, 0.12);
+}
+
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    linear-gradient(135deg, rgba(222, 238, 255, 0.95), rgba(248, 252, 255, 0.98) 46%, rgba(232, 244, 255, 0.95)),
+    radial-gradient(circle at 20% 10%, rgba(47, 125, 244, 0.16), transparent 34%);
+}
+
+.app {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 66px 1fr 42px;
+  padding: 18px 22px 12px;
+  gap: 14px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  -webkit-app-region: drag;
+}
+
+.brand, .top-actions, .chrome-controls {
+  display: flex;
+  align-items: center;
+}
+
+.brand { gap: 12px; }
+.brand-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: transparent;
+  overflow: hidden;
+}
+.brand-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+.brand h1 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+}
+.version {
+  margin-left: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #dfeafa;
+  color: #31415c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.top-actions {
+  gap: 18px;
+  color: #27344d;
+  font-weight: 700;
+  -webkit-app-region: no-drag;
+}
+.setting {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.chrome-controls {
+  gap: 18px;
+}
+.window-btn {
+  min-width: 18px;
+  border: 0;
+  background: transparent;
+  color: #1b2741;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.main {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(620px, 1fr) 398px;
+  gap: 18px;
+}
+
+.browser-card,
+.panel-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.browser-card {
+  display: grid;
+  grid-template-rows: 58px 1fr;
+  min-width: 0;
+}
+
+.browser-toolbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.78);
+  border-bottom: 1px solid var(--line);
+}
+.nav-icons, .tool-icons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #24314a;
+}
+.tool-btn {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tool-btn.muted { color: #9aa8bb; }
+.address {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 13px;
+  border: 1px solid #d4e0ef;
+  border-radius: 9px;
+  background: #fff;
+}
+#yx-address {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #526079;
+  font: inherit;
+  font-size: 15px;
+}
+.browser-placeholder {
+  display: grid;
+  place-items: center;
+  color: #8a99af;
+  background: #fff;
+}
+
+.side {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(200px, auto) 1fr;
+  gap: 14px;
+}
+.panel-card { padding: 18px; }
+.panel-card.fill {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel-card.fill .status-list { flex-shrink: 0; }
+.panel-card.fill .log-area { flex: 1; }
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 18px;
+  color: #16233d;
+  font-size: 16px;
+  font-weight: 800;
+}
+.action-stack { display: grid; gap: 12px; }
+.action-btn {
+  width: 100%;
+  min-height: 76px;
+  border: 0;
+  border-radius: 9px;
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  align-items: center;
+  padding: 0 20px;
+  text-align: left;
+  cursor: pointer;
+}
+.start {
+  color: #fff;
+  background: linear-gradient(135deg, #2684ff, #1f64f2);
+  box-shadow: 0 14px 28px rgba(47, 125, 244, .24);
+}
+.stop {
+  color: #df3131;
+  background: linear-gradient(135deg, #fff2f2, #ffe5e5);
+  border: 1px solid #ffc6c6;
+}
+.exam-only {
+  color: #b45309;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  border: 1px solid #fcd34d;
+}
+.exam-only .round-icon {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+}
+.round-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, .24);
+}
+.stop .round-icon {
+  background: linear-gradient(135deg, #ff6b6b, #e53935);
+  color: #fff;
+}
+.btn-title {
+  display: block;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+.btn-sub {
+  display: block;
+  margin-top: 7px;
+  font-size: 13px;
+  opacity: .82;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.stat-card {
+  min-height: 74px;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid #dce8f5;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #f8fbff, #ffffff);
+}
+.stat-card.exam {
+  border-color: #f8dfb6;
+  background: linear-gradient(135deg, #fffaf1, #fff);
+}
+.stat-card.time {
+  grid-column: 1 / -1;
+  border-color: #ccefdc;
+  background: linear-gradient(135deg, #f1fff7, #ffffff);
+}
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #eaf2ff;
+  color: var(--blue);
+  font-weight: 800;
+}
+.exam .stat-icon { background: #fff1d9; color: var(--orange); }
+.time .stat-icon { background: #dcf9e9; color: var(--green); }
+.stat-label {
+  color: #25314a;
+  font-size: 13px;
+  font-weight: 800;
+}
+.stat-value {
+  margin-top: 4px;
+  font-size: 25px;
+  line-height: 1;
+  font-weight: 900;
+  color: var(--blue);
+}
+.exam .stat-value { color: var(--orange); }
+.time .stat-value { color: var(--green); }
+.unit {
+  margin-left: 5px;
+  color: #7c8ba2;
+  font-size: 12px;
+  font-weight: 700;
+}
+.status-list {
+  display: grid;
+  gap: 9px;
+  color: #3b4963;
+  font-size: 13px;
+}
+.status-row {
+  display: grid;
+  grid-template-columns: 12px 76px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.row-label { color: #65758f; }
+.row-value {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 700;
+}
+.log-area {
+  min-height: 116px;
+  overflow: auto;
+  margin-top: 14px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e1eaf5;
+  background: #f7fbff;
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #53627b;
+}
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #237447;
+  font-size: 13px;
+  font-weight: 700;
+}
+.footer-actions {
+  display: flex;
+  gap: 32px;
+  color: #1d6fe8;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon"><img src="../logo.gif" alt="Logo" /></div>
+      <h1>东营继续教育助手</h1>
+      <span class="version">v1.0.0</span>
+    </div>
+    <div class="top-actions">
+      <div class="chrome-controls">
+        <button class="window-btn" id="win-min">—</button>
+        <button class="window-btn" id="win-max">□</button>
+        <button class="window-btn" id="win-close">×</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="browser-card">
+      <div class="browser-toolbar">
+        <div class="nav-icons">
+          <button class="tool-btn" id="nav-back">‹</button>
+          <button class="tool-btn muted" id="nav-forward">›</button>
+          <button class="tool-btn" id="nav-refresh">↻</button>
+        </div>
+        <div class="address">
+          <span>🔒</span>
+          <input id="yx-address" value="http://sddy.gxk.yxlearning.com/login" spellcheck="false" autocomplete="off" />
+        </div>
+        <div class="tool-icons">☆</div>
+      </div>
+      <div class="browser-placeholder">左侧浏览器正在加载...</div>
+    </section>
+
+    <aside class="side">
+      <section class="panel-card">
+        <div class="section-title">▦ 控制中心</div>
+        <div class="action-stack">
+          <button class="action-btn start" id="yx-btn-start" type="button">
+            <span class="round-icon">▶</span>
+            <span><span class="btn-title">开始视频课程学习</span><span class="btn-sub">自动学习课程，智能完成任务</span></span>
+          </button>
+          <button class="action-btn stop" id="yx-btn-stop" type="button" disabled>
+            <span class="round-icon">■</span>
+            <span><span class="btn-title">停止学习</span><span class="btn-sub">停止所有学习任务</span></span>
+          </button>
+          <button class="action-btn exam-only" id="yx-btn-exam" type="button">
+            <span class="round-icon">📝</span>
+            <span><span class="btn-title">开始考试</span><span class="btn-sub">先完成视频课程再考试</span></span>
+          </button>
+        </div>
+      </section>
+
+      <section class="panel-card fill">
+        <div class="section-title">⌁ 运行状态</div>
+        <div class="status-list">
+          <div class="status-row"><span class="dot"></span><span class="row-label">程序状态:</span><span class="row-value" id="yx-phase">就绪</span></div>
+          <div class="status-row"><span class="dot"></span><span class="row-label">当前任务:</span><span class="row-value" id="yx-status">等待开始</span></div>
+          <div class="status-row"><span class="dot"></span><span class="row-label">运行时长:</span><span class="row-value" id="yx-runtime">00:00:00</span></div>
+          <div class="status-row"><span class="dot"></span><span class="row-label">完成课程:</span><span class="row-value" id="yx-course-done">--</span></div>
+          <div class="status-row"><span class="dot"></span><span class="row-label">完成考试:</span><span class="row-value" id="yx-done">--</span></div>
+        </div>
+        <div class="log-area" id="yx-log"></div>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    <div>● 浏览器内核运行正常</div>
+    <div class="footer-actions"><span>↻ 检查更新</span></div>
+  </footer>
+</div>
+
+<script>
+var startedAt = null;
+var running = false;
+var timerInterval = null;
+var logBuffer = [];
+var maxLogLines = 200;
+
+function setText(id, value) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = String(value);
+}
+
+function formatRuntime(ms) {
+  var total = Math.max(0, Math.floor(ms / 1000));
+  var h = String(Math.floor(total / 3600)).padStart(2, '0');
+  var m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+  var s = String(total % 60).padStart(2, '0');
+  return h + ':' + m + ':' + s;
+}
+
+function addLog(text, time) {
+  var log = document.getElementById('yx-log');
+  var row = document.createElement('div');
+  row.textContent = (time || new Date().toLocaleTimeString()) + ' ' + text;
+  log.appendChild(row);
+  // Trim old entries
+  while (log.children.length > maxLogLines) log.removeChild(log.firstChild);
+  log.scrollTop = log.scrollHeight;
+}
+
+function formatHours(ms) {
+  var hours = ms / 3600000;
+  return hours.toFixed(1);
+}
+
+// ── Toolbar buttons ────────────────────────────────────────
+document.getElementById('yx-address').addEventListener('keydown', function(event) {
+  if (event.key !== 'Enter') return;
+  window.yxNative.navigate(event.target.value).then(function(url) {
+    event.target.value = url;
+  });
+});
+document.getElementById('nav-back').onclick = function() { window.yxNative.back(); };
+document.getElementById('nav-forward').onclick = function() { window.yxNative.forward(); };
+document.getElementById('nav-refresh').onclick = function() { window.yxNative.refresh(); };
+document.getElementById('win-min').onclick = function() { window.yxNative.minimize(); };
+document.getElementById('win-max').onclick = function() { window.yxNative.maximize(); };
+document.getElementById('win-close').onclick = function() { window.yxNative.close(); };
+
+// ── Start / Stop ───────────────────────────────────────────
+document.getElementById('yx-btn-start').onclick = function() {
+  window.yxNative.start();
+  addLog('收到开始学习指令');
+};
+document.getElementById('yx-btn-stop').onclick = function() {
+  window.yxNative.stop();
+  addLog('发送停止请求...');
+};
+document.getElementById('yx-btn-exam').onclick = function() {
+  window.yxNative.startExam();
+  addLog('进入考试模式');
+};
+
+// ── URL updates from BrowserView ───────────────────────────
+window.yxNative.onUrl(function(url) {
+  document.getElementById('yx-address').value = url;
+});
+
+// ── Status updates from automation ─────────────────────────
+window.yxNative.onStatus(function(data) {
+  running = !!data.running;
+  if (running) {
+    if (!startedAt) startedAt = Date.now();
+    startTimer();
+  } else {
+    stopTimer();
+    startedAt = null;
+  }
+  document.getElementById('yx-btn-start').disabled = running;
+  document.getElementById('yx-btn-stop').disabled = !running;
+  document.getElementById('yx-btn-exam').disabled = running;
+  setText('yx-phase', data.phase || '就绪');
+  setText('yx-status', data.task || '等待开始');
+  if (!running) setText('yx-runtime', '00:00:00');
+});
+
+// ── Log entries from automation ────────────────────────────
+window.yxNative.onLog(function(data) {
+  addLog(data.text, data.time);
+});
+
+// ── Course count updates ───────────────────────────────────
+window.yxNative.onCourses(function(data) {
+  if (data.current) {
+    // Currently playing a course: show "completed/total | current"
+    setText('yx-courses', (data.completed || 0) + '/' + (data.total || '--'));
+  } else if (data.total) {
+    setText('yx-courses', (data.completed || 0) + '/' + data.total);
+  }
+});
+
+// ── Exam count updates ─────────────────────────────────────
+window.yxNative.onExams(function(data) {
+  setText('yx-exams', data.pending != null ? String(data.pending) : '--');
+  setText('yx-done', data.completed != null ? String(data.completed) + ' 项' : '--');
+  if (data.total != null) {
+    setText('yx-course-done', '共 ' + data.total + ' 个考试');
+  }
+});
+
+// ── Runtime tick from main process ─────────────────────────
+window.yxNative.onRuntimeTick(function(data) {
+  if (data.elapsed != null) {
+    setText('yx-runtime', formatRuntime(data.elapsed));
+    setText('yx-hours', formatHours(data.elapsed));
+  }
+});
+
+// ── Local timer fallback ───────────────────────────────────
+function startTimer() {
+  if (timerInterval) return;
+  timerInterval = setInterval(function() {
+    if (startedAt) {
+      var elapsed = Date.now() - startedAt;
+      setText('yx-runtime', formatRuntime(elapsed));
+      setText('yx-hours', formatHours(elapsed));
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+</script>
+</body>
+</html>

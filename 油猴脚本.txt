@@ -1,0 +1,659 @@
+// ==UserScript==
+// @name         大众云学自动学习（东营公需科目）
+// @namespace    https://yxlearning.com/
+// @version      1.1.0
+// @description  自动播放 + 静音 + 跳题 + 切下一节 + 活跃度模拟。基于现有成熟脚本的选择器改写，保留 iframe 兼容与短视频过滤。不改倍速。
+// @author       you
+// @match        *://*.yxlearning.com/*
+// @match        *://*.bokecc.com/*
+// @match        *://*.polyv.net/*
+// @match        *://*.baijiayun.com/*
+// @run-at       document-idle
+// @grant        none
+// @all-frames   true
+// ==/UserScript==
+
+(function () {
+    'use strict';
+
+    const IS_TOP = (window === window.top);
+    const FRAME_TAG = IS_TOP ? '[TOP]' : '[IFRAME:' + location.host + ']';
+
+    // ============ 配置 ============
+    const CFG = {
+        mute: true,                 // 静音（同时操作 <video> 属性 + 平台音量按钮 UI）
+        muteIntervalMs: 1000,       // 静音检查频率
+        playbackRate: 1,            // 倍速：保持 1，后端会校验心跳时长一致性
+        autoNext: true,             // 播完自动切下一节
+        // 答题策略: 'remove' = 直接删掉答题弹窗 DOM（最省心，推荐）
+        //           'answer' = 依次试 A/B/C/D 并提交直到答对（真答题）
+        //           'skip'   = 点平台的"跳过"按钮（需平台支持）
+        quizStrategy: 'remove',
+        autoSkipQuiz: true,         // strategy='skip' 时自动点"跳过"答题按钮
+        autoAnswerQuiz: true,       // strategy='answer' 时依次尝试 A/B/C/D 并提交
+        answerIntervalMs: 2500,     // 两次提交之间的间隔（防止被限流）
+        autoPopup: true,            // 关闭"继续观看/我知道了"类弹窗
+        autoCourseComplete: true,   // 课程完成弹窗自动点"返回课程列表"
+        autoListPage: true,         // 课程列表页自动点击第一个未完成课程（进度 < 100%）
+        listPageThrottleMs: 5000,   // 列表页操作节流（避免刚进去又被点出去）
+        simulateActivity: true,     // 模拟鼠标移动 + 滚轮滑动（降低被判定为无人值守）
+        activityIntervalMs: 5000,
+        minDuration: 60,            // 时长小于此值的 <video> 视为装饰/广告，不当主视频
+        logTag: '[AutoLearn]',
+        tickMs: 2000,
+    };
+    // ==============================
+
+    const log = (...a) => console.log(CFG.logTag + FRAME_TAG, ...a);
+
+    // --------- 跨帧通信（保留，以防某些页面视频在 iframe 里） ----------
+    function postToParent(type, data) {
+        try { window.parent.postMessage({ __autoLearn: true, type, data }, '*'); } catch (e) {}
+    }
+    window.addEventListener('message', (ev) => {
+        const m = ev.data;
+        if (!m || !m.__autoLearn) return;
+        if (IS_TOP && m.type === 'ended') {
+            setTimeout(() => clickNextLesson(), 1500);
+        }
+    });
+
+    // --------- 基础工具 ----------
+    function isVisible(el) {
+        if (!el || el.nodeType !== 1) return false;
+        const r = el.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0) return false;
+        // 不用 offsetParent（position:fixed 下会误判）
+        // 检查自身和祖先的 display/visibility
+        let cur = el;
+        for (let i = 0; i < 30 && cur && cur.nodeType === 1; i++) {
+            const cs = getComputedStyle(cur);
+            if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+            if (cs.opacity === '0') return false;
+            cur = cur.parentElement;
+        }
+        return true;
+    }
+
+    // 自然点击：mousedown + mouseup + click，比 .click() 更像真人
+    function natClick(el) {
+        if (!el || !isVisible(el)) return false;
+        const r = el.getBoundingClientRect();
+        const x = r.left + r.width / 2;
+        const y = r.top + r.height / 2;
+        ['mousedown', 'mouseup', 'click'].forEach(type => {
+            el.dispatchEvent(new MouseEvent(type, {
+                bubbles: true, cancelable: true, view: window,
+                clientX: x, clientY: y, button: 0
+            }));
+        });
+        return true;
+    }
+
+    function getAllVideos() {
+        const vids = Array.from(document.querySelectorAll('video'));
+        document.querySelectorAll('iframe').forEach(ifr => {
+            try { const d = ifr.contentDocument; if (d) vids.push(...d.querySelectorAll('video')); } catch (e) {}
+        });
+        return vids;
+    }
+
+    function getMainVideo() {
+        const vs = getAllVideos().filter(v => isFinite(v.duration) && v.duration >= CFG.minDuration);
+        if (vs.length === 0) return null;
+        return vs.sort((a, b) => b.duration - a.duration)[0];
+    }
+
+    // --------- 课时列表 & 下一节 ----------
+    function getCurrentLessonLi() {
+        return document.querySelector('li.videoLi.active') || document.querySelector('.course-list-item.active');
+    }
+
+    function getBadgeText(li) {
+        if (!li) return '';
+        const b = li.querySelector('.badge') || li.querySelector('.status-tag');
+        return b ? b.textContent.trim() : '';
+    }
+
+    function isLessonCompleted(li) {
+        const t = getBadgeText(li);
+        return t === '100%' || t === '100';
+    }
+
+    function clickNextLesson() {
+        const cur = getCurrentLessonLi();
+        if (!cur) { log('未找到当前课时 li（可能还没加载好）'); return false; }
+        if (!isLessonCompleted(cur)) {
+            log(`当前课时未完成（进度=${getBadgeText(cur)}），不切换`);
+            return false;
+        }
+        let next = cur.nextElementSibling;
+        while (next && !(next.classList.contains('videoLi') || next.classList.contains('course-list-item'))) {
+            next = next.nextElementSibling;
+        }
+        if (!next) { log('已是最后一节'); return false; }
+        const target = next.querySelector('.video-info') || next.querySelector('.course-item-title') || next;
+        if (!isVisible(target)) {
+            // 滚动到可见
+            next.scrollIntoView({ block: 'center', behavior: 'auto' });
+            setTimeout(() => natClick(target), 300);
+            return true;
+        }
+        log('切下一节:', (target.textContent || '').trim().slice(0, 40));
+        return natClick(target);
+    }
+
+    // --------- 视频控制 ----------
+    function keepVideo(v) {
+        try {
+            // 静音由独立的 autoMute 函数处理（双保险：video 属性 + 平台 UI）
+            if (v.playbackRate !== CFG.playbackRate) v.playbackRate = CFG.playbackRate;
+            if (v.paused && v.readyState >= 2 && !v.ended) {
+                const p = v.play();
+                if (p && p.catch) p.catch(() => tryClickPlayButton());
+            }
+        } catch (e) {}
+    }
+
+    function tryClickPlayButton() {
+        // 新版：#play 存在且 #stop 不存在 => 暂停态
+        const play = document.getElementById('play');
+        const stop = document.getElementById('stop');
+        if (play && isVisible(play) && (!stop || !isVisible(stop))) {
+            log('点击 #play'); natClick(play); return true;
+        }
+        // 旧版保利威
+        const pv = document.querySelector('.pv-playpause.pv-icon-btn-play');
+        if (pv && isVisible(pv)) { log('点击 .pv-playpause'); natClick(pv); return true; }
+        // 旧版 bplayer
+        const bp = document.querySelector('.bplayer-playpause.bplayer-btn-play');
+        if (bp && isVisible(bp)) { log('点击 .bplayer-playpause'); natClick(bp); return true; }
+        return false;
+    }
+
+    function isEnded(v) {
+        if (!v || !isFinite(v.duration) || v.duration <= 0) return false;
+        return v.ended || (v.duration - v.currentTime < 1.5);
+    }
+
+    // --------- 答题弹窗跳过 ----------
+    function skipQuiz() {
+        const wraps = [
+            '.bplayer-question-wrap',
+            '.question-modal-container',
+            '.pv-ask-modal-wrap',
+        ];
+        for (const ws of wraps) {
+            const w = document.querySelector(ws);
+            if (!w || !isVisible(w)) continue;
+            const skipBtn = w.querySelector('.skip.bplayer-btn, .skip-button, .pv-ask-skip, button.btn-skip');
+            if (skipBtn && isVisible(skipBtn)) {
+                log('跳过答题:', ws); natClick(skipBtn); return;
+            }
+            // 没跳过按钮就点确定/提交（如果已填好）
+            const okBtn = w.querySelector('.complete.bplayer-btn, .confirm-button, .pv-ask-submit, button.btn-confirm');
+            if (okBtn && isVisible(okBtn)) {
+                log('提交答题弹窗:', ws); natClick(okBtn); return;
+            }
+        }
+    }
+
+    // --------- 删除答题弹窗 DOM（quizStrategy='remove'）----------
+    // 参考脚本喵 v2.0 方案：直接 .remove() 答题容器 + 2s 后点播放，最省心
+    function removeQuizDOM() {
+        const selectors = [
+            'div.bplayer-question-wrap[style*="display: flex"]',
+            'div.bplayer-question-wrap[style*="display:flex"]',
+            '.bplayer-question-wrap',
+            '.question-modal-container',
+            '.pv-ask-modal-wrap',
+        ];
+        let removed = 0;
+        for (const sel of selectors) {
+            document.querySelectorAll(sel).forEach(el => {
+                // 仅删可见的（避免误删隐藏模板）
+                if (!isVisible(el)) return;
+                el.remove();
+                removed++;
+                log('🗑 删除答题弹窗:', sel);
+            });
+        }
+        if (removed > 0) {
+            // 2 秒后补点一次播放按钮（防止弹窗删掉后视频没自动恢复）
+            setTimeout(() => {
+                const v = getMainVideo();
+                if (v && v.paused && !v.ended) {
+                    v.play().catch(() => tryClickPlayButton());
+                } else if (!v) {
+                    tryClickPlayButton();
+                }
+            }, 2000);
+        }
+        return removed > 0;
+    }
+
+    // --------- 自动答题：依次试 A/B/C/D 直到弹窗消失 ----------
+    const quizState = {
+        sig: null,          // 当前题目指纹（题干前 80 字符）
+        triedIdx: -1,       // 上一次尝试的选项 index
+        lastSubmitAt: 0,    // 上次提交时间戳
+        exhausted: false,   // 是否所有选项都试过了
+    };
+
+    function findQuizModal() {
+        // 用题干关键词匹配，避免误伤
+        const cands = document.querySelectorAll(
+            '[class*="modal"], [class*="dialog"], [class*="popup"], [class*="question"], [role="dialog"]'
+        );
+        for (const m of cands) {
+            if (!isVisible(m)) continue;
+            const t = m.textContent || '';
+            // 同时包含题型标记和"提交"按钮文本才认定为答题弹窗
+            if (/单选题|多选题|判断题|答题/.test(t) && /提交/.test(t)) return m;
+        }
+        return null;
+    }
+
+    function getQuizSig(modal) {
+        // 优先从具体的题干元素取文本（不含反馈文案，稳定）
+        const qEl = modal.querySelector(
+            '.bplayer-question-body, .question-title, .question-content, .question-text, .pv-ask-title, [class*="question-body"], [class*="question-title"]'
+        );
+        let src = '';
+        if (qEl) {
+            src = (qEl.textContent || '').trim();
+        } else {
+            src = (modal.textContent || '').trim();
+        }
+        const m = src.match(/【(单选题|多选题|判断题)】\s*([^\n]{3,120})/);
+        if (m) return m[1] + '::' + m[2].trim().replace(/\s+/g, ' ').slice(0, 80);
+        return src.replace(/\s+/g, ' ').slice(0, 80);
+    }
+
+    function getQuizOptions(modal) {
+        // 1. 常见 class
+        let opts = Array.from(modal.querySelectorAll(
+            '.option, .option-item, .answer-item, [class*="option-"], [class*="answer-"]'
+        )).filter(isVisible);
+        if (opts.length >= 2) return opts;
+
+        // 2. 启发式：modal 内部带 A/B/C/D 前缀的可点击行
+        const all = Array.from(modal.querySelectorAll('li, div, label, span'));
+        const matched = [];
+        const seen = new Set();
+        for (const el of all) {
+            if (!isVisible(el)) continue;
+            const t = (el.textContent || '').trim();
+            // 匹配 "A 正确" / "A. 正确" / "A、正确" 开头，且长度合理
+            if (!/^[A-Z]([\s\.．、:：]|$)/.test(t)) continue;
+            if (t.length > 300) continue;
+            // 取最"小"的那个（避免外层容器）
+            const letter = t[0];
+            if (seen.has(letter)) continue;
+            // 找出真正的最内层（无子元素匹配同字母的）
+            let inner = el;
+            const children = el.querySelectorAll('li, div, label, span');
+            for (const c of children) {
+                const ct = (c.textContent || '').trim();
+                if (ct === t || (ct.startsWith(letter) && ct.length < t.length && /^[A-Z]([\s\.．、:：]|$)/.test(ct))) {
+                    inner = c;
+                    break;
+                }
+            }
+            seen.add(letter);
+            matched.push(inner);
+        }
+        matched.sort((a, b) => (a.textContent || '')[0].localeCompare((b.textContent || '')[0]));
+        return matched;
+    }
+
+    function getSubmitBtn(modal) {
+        return Array.from(modal.querySelectorAll('button, .btn, [class*="btn"], [class*="submit"], a'))
+            .find(b => {
+                const t = (b.textContent || '').trim();
+                return (t === '提交' || t === '确定') && isVisible(b);
+            });
+    }
+
+    // 区分答对/答错
+    function isWrongFeedback(m) {
+        const t = (m && m.textContent) || '';
+        return /视频将回退|回退到|答错|错误|回答错/.test(t);
+    }
+
+    // 向上找到一个看起来像"弹窗容器"的祖先（定位 fixed/absolute，或面积适中）
+    function getModalAncestor(el) {
+        let cur = el;
+        for (let i = 0; i < 15 && cur && cur !== document.body; i++) {
+            const cs = getComputedStyle(cur);
+            if (cs.position === 'fixed' || cs.position === 'absolute') {
+                const r = cur.getBoundingClientRect();
+                if (r.width >= 200 && r.width <= 1200 && r.height >= 100) return cur;
+            }
+            cur = cur.parentElement;
+        }
+        return el.closest('[class*="modal"], [class*="dialog"], [class*="popup"], [class*="wrap"], [role="dialog"]') || el.parentElement;
+    }
+
+    // 全页面扫可见的"完成"按钮（激进模式）
+    function findAnyDoneButton() {
+        // 1. 参考脚本用过的 class 名优先
+        const classSels = ['.complete.bplayer-btn', '.confirm-button', 'button.btn-confirm', '.pv-ask-submit'];
+        for (const s of classSels) {
+            const b = document.querySelector(s);
+            if (b && isVisible(b)) return b;
+        }
+        // 2. 文本匹配：所有可见按钮文字为"完成"
+        const cands = Array.from(document.querySelectorAll(
+            'button, [class*="btn"], a, div[role="button"], span[role="button"]'
+        )).filter(el => {
+            if (!isVisible(el)) return false;
+            const t = (el.textContent || '').trim();
+            if (t !== '完成') return false;
+            // 避免误点超大区域（> 500x150）
+            const r = el.getBoundingClientRect();
+            return r.width < 500 && r.height < 150;
+        });
+        // 按 z-index 倒排，优先最顶层的
+        cands.sort((a, b) => {
+            const az = parseInt(getComputedStyle(a).zIndex) || 0;
+            const bz = parseInt(getComputedStyle(b).zIndex) || 0;
+            return bz - az;
+        });
+        return cands[0] || null;
+    }
+
+    function findFeedbackModal() {
+        const btn = findAnyDoneButton();
+        if (!btn) return null;
+        const modal = getModalAncestor(btn);
+        if (!modal) return null;
+        // 若此容器内同时有可见的"提交"按钮，说明是答题弹窗不是反馈弹窗
+        const hasSubmit = Array.from(modal.querySelectorAll('button, [class*="btn"], a'))
+            .some(el => isVisible(el) && (el.textContent || '').trim() === '提交');
+        if (hasSubmit) return null;
+        return modal;
+    }
+
+    function dismissFeedback() {
+        const btn = findAnyDoneButton();
+        if (!btn) return false;
+        // 页面上如果同时有可见"提交"按钮，说明答题弹窗还在，别乱点
+        const hasSubmit = Array.from(document.querySelectorAll('button, [class*="btn"], a'))
+            .some(el => isVisible(el) && (el.textContent || '').trim() === '提交');
+        if (hasSubmit) return false;
+
+        const modal = getModalAncestor(btn);
+        const wrong = isWrongFeedback(modal) || isWrongFeedback(document.body);
+        log(`${wrong ? '✗ 答错' : '✓ 答对'} → 点"完成"`, btn.className || btn.tagName);
+        natClick(btn);
+
+        if (wrong) {
+            quizState.lastSubmitAt = Date.now();
+        } else {
+            quizState.sig = null;
+            quizState.triedIdx = -1;
+            quizState.exhausted = false;
+        }
+        return true;
+    }
+
+    function answerQuiz() {
+        const modal = findQuizModal();
+        if (!modal) {
+            if (!quizState.sig) return;
+            // 反馈弹窗（对/错都含"完成"）在 → 由 dismissFeedback 处理
+            if (findFeedbackModal()) return;
+            // 兜底：15s 内都没任何弹窗（反馈弹窗可能被误关或快速消失）
+            if (Date.now() - quizState.lastSubmitAt < 15000) return;
+            log(`? 兜底清状态（上次选的选项 ${quizState.triedIdx}）`);
+            quizState.sig = null;
+            quizState.triedIdx = -1;
+            quizState.exhausted = false;
+            return;
+        }
+
+        const now = Date.now();
+        if (now - quizState.lastSubmitAt < CFG.answerIntervalMs) return;
+
+        const sig = getQuizSig(modal);
+        const opts = getQuizOptions(modal);
+        const submit = getSubmitBtn(modal);
+
+        if (!submit) { log('答题弹窗未找到提交按钮'); return; }
+        if (opts.length === 0) { log('答题弹窗未找到选项'); return; }
+
+        // 新题目？
+        const sigChanged = sig !== quizState.sig;
+        if (sigChanged) {
+            log(`sig 变化: "${String(quizState.sig).slice(0,40)}" → "${sig.slice(0,40)}"`);
+            quizState.sig = sig;
+            quizState.triedIdx = -1;
+            quizState.exhausted = false;
+            log(`🆕 新题目  共 ${opts.length} 选项`);
+        } else {
+            log(`题干未变(sig="${sig.slice(0,30)}...")，保留 triedIdx=${quizState.triedIdx}`);
+        }
+
+        if (quizState.exhausted) return;
+
+        quizState.triedIdx++;
+        if (quizState.triedIdx >= opts.length) {
+            log('⚠️ 所有选项都试过仍没通过，停止自动答题');
+            quizState.exhausted = true;
+            return;
+        }
+
+        const opt = opts[quizState.triedIdx];
+        const optText = (opt.textContent || '').trim().slice(0, 40);
+        log(`尝试选项 ${quizState.triedIdx} (${optText})`);
+        natClick(opt);
+
+        setTimeout(() => {
+            // 再次确认 modal 仍在（避免点完选项 modal 就关了再误点提交）
+            if (!isVisible(modal)) return;
+            natClick(submit);
+            quizState.lastSubmitAt = Date.now();
+            log('已点提交');
+        }, 500);
+    }
+
+    // --------- 课程完成弹窗：点"返回课程列表" ----------
+    // 弹窗结构：.modal-header 含"完成学习"标题，.modal-footer 含两个 btn：返回课程列表 / 前往考试
+    function handleCourseComplete() {
+        // 1. 全页面扫所有可见按钮
+        const btns = Array.from(document.querySelectorAll('button, a, .btn, [class*="btn"]'));
+        const backBtn = btns.find(b =>
+            isVisible(b) && (b.textContent || '').trim() === '返回课程列表'
+        );
+        if (!backBtn) return false;
+
+        // 2. 确认确实是"完成学习"弹窗（避免误点其他地方可能的同名按钮）
+        const modal = backBtn.closest(
+            '.modal, [class*="modal"], [class*="dialog"], [role="dialog"]'
+        ) || backBtn.parentElement;
+        const modalText = (modal && modal.textContent) || '';
+        if (!/完成学习|学习进度已达到|课程通过/.test(modalText)) {
+            // 容器里没课程完成关键字，保守起见看全文
+            if (!/完成学习|学习进度已达到100%/.test(document.body.textContent || '')) return false;
+        }
+
+        log('🎓 课程完成 → 点"返回课程列表"');
+        natClick(backBtn);
+        return true;
+    }
+
+    // --------- 通用弹窗关闭 ----------
+    function dismissPopups() {
+        // 注意：不含"确定"，避免误点答题弹窗的确定按钮；答题弹窗由 answerQuiz 专门处理
+        const txts = ['继续观看', '继续学习', '我知道了', '知道了', '关闭'];
+        document.querySelectorAll('button, .btn, [class*="btn"], a').forEach(b => {
+            if (!isVisible(b)) return;
+            const t = (b.textContent || '').trim();
+            if (txts.includes(t)) { log('关弹窗:', t); natClick(b); }
+        });
+    }
+
+    // --------- 自动静音：video 属性 + 平台 UI 双保险 ----------
+    function autoMute() {
+        if (!CFG.mute) return;
+
+        // 1. 直接设置所有 video 元素
+        getAllVideos().forEach(v => {
+            try {
+                if (v.volume !== 0) v.volume = 0;
+                if (!v.muted) v.muted = true;
+            } catch (e) {}
+        });
+
+        // 2. 新版平台：#speaker (有声图标) 可见 → 点击切换到静音
+        const speaker = document.getElementById('speaker');
+        const unspeaker = document.getElementById('unspeaker');
+        if (speaker && isVisible(speaker) && (!unspeaker || !isVisible(unspeaker))) {
+            if (natClick(speaker)) log('点 #speaker 静音');
+            return;
+        }
+
+        // 3. 旧版保利威：.pv-volume 且不含 .pv-icon-btn-volmute (未静音态)
+        const pv = document.querySelector('.pv-volume');
+        if (pv && isVisible(pv) && !pv.classList.contains('pv-icon-btn-volmute')) {
+            if (natClick(pv)) log('点 .pv-volume 静音');
+            return;
+        }
+
+        // 4. 旧版 bplayer：.bplayer-volume 带 .bplayer-vol-open (未静音态)
+        const bp = document.querySelector('.bplayer-volume');
+        if (bp && isVisible(bp) && bp.classList.contains('bplayer-vol-open')) {
+            if (natClick(bp)) log('点 .bplayer-volume 静音');
+        }
+    }
+
+    // --------- 活跃度模拟 ----------
+    let _actTimer = null;
+    function startActivity() {
+        if (_actTimer) return;
+        _actTimer = setInterval(() => {
+            try {
+                // 鼠标微移
+                const area = document.querySelector('.bplayer-wrap, .pv-video-player, .player-container') || document.body;
+                const r = area.getBoundingClientRect();
+                if (r.width > 0) {
+                    const x = r.left + r.width / 2 + (Math.random() - 0.5) * 20;
+                    const y = r.top + r.height / 2 + (Math.random() - 0.5) * 20;
+                    area.dispatchEvent(new MouseEvent('mousemove', {
+                        bubbles: true, cancelable: true, view: window, clientX: x, clientY: y
+                    }));
+                }
+                // 滚轮微动
+                window.scrollBy({ top: 5, behavior: 'instant' });
+                setTimeout(() => window.scrollBy({ top: -5, behavior: 'instant' }), 60);
+            } catch (e) {}
+        }, CFG.activityIntervalMs);
+    }
+
+    // --------- 主循环 ----------
+    let prevTime = 0, stuckCount = 0;
+    function tick() {
+        try {
+            if (CFG.autoCourseComplete) handleCourseComplete();
+            if (CFG.autoPopup) dismissPopups();
+
+            // 按策略处理答题弹窗
+            switch (CFG.quizStrategy) {
+                case 'remove':
+                    removeQuizDOM();
+                    break;
+                case 'answer':
+                    dismissFeedback();
+                    answerQuiz();
+                    break;
+                case 'skip':
+                    skipQuiz();
+                    break;
+            }
+
+            const v = getMainVideo();
+            if (!v) {
+                // 可能视频未加载，或页面不是视频页。尝试按播放按钮激活
+                tryClickPlayButton();
+                return;
+            }
+
+            keepVideo(v);
+
+            // 卡顿检测
+            if (!v.paused && Math.abs(v.currentTime - prevTime) < 0.1) {
+                stuckCount++;
+                if (stuckCount >= 8) {
+                    log(`卡顿 ${stuckCount * CFG.tickMs / 1000}s，尝试点播放按钮`);
+                    tryClickPlayButton();
+                    stuckCount = 0;
+                }
+            } else {
+                stuckCount = 0;
+            }
+            prevTime = v.currentTime;
+
+            if (CFG.autoNext && isEnded(v)) {
+                log(`视频结束 (${v.currentTime.toFixed(1)}/${v.duration.toFixed(1)})`);
+                if (IS_TOP) setTimeout(() => clickNextLesson(), 1500);
+                else postToParent('ended', { t: v.currentTime, d: v.duration });
+            }
+        } catch (e) {
+            log('tick err', e);
+        }
+    }
+
+    // --------- 视频事件绑定 ----------
+    function bindVideos() {
+        getAllVideos().forEach(v => {
+            if (v.__autoLearnBound) return;
+            v.__autoLearnBound = true;
+            v.addEventListener('ended', () => {
+                if (!CFG.autoNext) return;
+                if (!isFinite(v.duration) || v.duration < CFG.minDuration) return;
+                log('ended 事件');
+                if (IS_TOP) setTimeout(() => clickNextLesson(), 1500);
+                else postToParent('ended', { t: v.currentTime, d: v.duration });
+            });
+            v.addEventListener('pause', () => {
+                if (v.ended || v.seeking) return;
+                setTimeout(() => {
+                    if (v.paused && !v.ended) v.play().catch(() => tryClickPlayButton());
+                }, 800);
+            });
+        });
+    }
+
+    // --------- 启动 ----------
+    log('启动 v1.1.0  策略=' + CFG.quizStrategy + '  host=' + location.host + '  path=' + location.pathname);
+    setInterval(tick, CFG.tickMs);
+    setInterval(bindVideos, 2000);
+    setInterval(autoMute, CFG.muteIntervalMs);
+    if (CFG.simulateActivity) startActivity();
+
+    // 暴露到控制台
+    window.__autoLearn = {
+        cfg: CFG,
+        next: clickNextLesson,
+        play: tryClickPlayButton,
+        skipQuiz,
+        answerQuiz,
+        removeQuizDOM,
+        dismissFeedback,
+        handleCourseComplete,
+        quizState,
+        resetQuiz: () => { quizState.sig = null; quizState.triedIdx = -1; quizState.exhausted = false; log('quiz state reset'); },
+        status: () => {
+            const v = getMainVideo();
+            const cur = getCurrentLessonLi();
+            return {
+                frame: FRAME_TAG,
+                video: v ? { t: +v.currentTime.toFixed(1), d: +v.duration.toFixed(1), paused: v.paused, muted: v.muted, rate: v.playbackRate } : null,
+                currentLesson: cur ? (cur.textContent || '').trim().slice(0, 60) : null,
+                progress: getBadgeText(cur),
+            };
+        }
+    };
+    log('挂载完成。控制台用 __autoLearn.status() 查看，__autoLearn.next() 手动切下一节');
+})();

@@ -15,6 +15,20 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         .catch(error => sendResponse({ error: error.message }));
       return true;
 
+    case 'downloadText':
+      chrome.downloads.download({
+        url: 'data:application/json;charset=utf-8,' + encodeURIComponent(message.text || ''),
+        filename: message.filename || 'exam-capture.json',
+        saveAs: true
+      }, downloadId => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ error: chrome.runtime.lastError.message });
+          return;
+        }
+        sendResponse({ downloadId });
+      });
+      return true;
+
     default:
       sendResponse({ error: 'Unknown message type' });
   }
