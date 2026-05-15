@@ -130,6 +130,9 @@ function hideKnownPagePopups() {
         '/group1/UIMG/20260413/b4b2ea46-5658-4d14-9f76-0f57bb514812.png',
         '/group1/UIMG/20260413/4c8d4010-f63d-43c9-b94e-bda2a602a928.png'
       ];
+      const popupSelectors = [
+        '.automv'
+      ];
 
       function hideElement(el) {
         let target = el;
@@ -147,6 +150,9 @@ function hideKnownPagePopups() {
       }
 
       function clean() {
+        for (const selector of popupSelectors) {
+          document.querySelectorAll(selector).forEach(hideElement);
+        }
         for (const path of popupImagePaths) {
           document.querySelectorAll('img[src*="' + path + '"]').forEach(hideElement);
         }
