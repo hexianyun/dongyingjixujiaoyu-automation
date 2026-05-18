@@ -534,8 +534,6 @@ body {
           <div class="status-row"><span class="dot"></span><span class="row-label">程序状态:</span><span class="row-value" id="yx-phase">就绪</span></div>
           <div class="status-row"><span class="dot"></span><span class="row-label">当前任务:</span><span class="row-value" id="yx-status">等待开始</span></div>
           <div class="status-row"><span class="dot"></span><span class="row-label">运行时长:</span><span class="row-value" id="yx-runtime">00:00:00</span></div>
-          <div class="status-row"><span class="dot"></span><span class="row-label">完成课程:</span><span class="row-value" id="yx-course-done">--</span></div>
-          <div class="status-row"><span class="dot"></span><span class="row-label">完成考试:</span><span class="row-value" id="yx-done">--</span></div>
         </div>
         <div class="log-area" id="yx-log"></div>
       </section>
@@ -663,10 +661,6 @@ window.yxNative.onCourses(function(data) {
 // ── Exam count updates ─────────────────────────────────────
 window.yxNative.onExams(function(data) {
   setText('yx-exams', data.pending != null ? String(data.pending) : '--');
-  setText('yx-done', data.completed != null ? String(data.completed) + ' 项' : '--');
-  if (data.total != null) {
-    setText('yx-course-done', '共 ' + data.total + ' 个考试');
-  }
 });
 
 // ── Runtime tick from main process ─────────────────────────

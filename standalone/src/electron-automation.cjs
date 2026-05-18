@@ -276,6 +276,74 @@ async function muteAllFrames(page) {
   }
 }
 
+async function installPersistentPlayerControls(page) {
+  for (const frame of page.frames()) {
+    await frame.evaluate(() => {
+      if (window.__yxPersistentPlayerControlsInstalled) return;
+      window.__yxPersistentPlayerControlsInstalled = true;
+
+      const style = document.createElement('style');
+      style.id = 'yx-persistent-player-controls';
+      style.textContent = `
+        .bplayer-controller-wrap,
+        .bplayer-control-wrap,
+        .bplayer-controls,
+        .bplayer-toolbar,
+        .pv-controls,
+        .pv-controls-wrap,
+        .pv-control-bar,
+        .prism-controlbar,
+        .xgplayer-controls,
+        .xg-controls,
+        .vjs-control-bar {
+          opacity: 1 !important;
+          visibility: visible !important;
+          transform: none !important;
+          pointer-events: auto !important;
+        }
+
+        .bplayer-progress-wrap,
+        .bplayer-progress,
+        .pv-progressbar,
+        .pv-progress,
+        .prism-progress,
+        .xgplayer-progress,
+        .xg-inner-controls,
+        .vjs-progress-control {
+          opacity: 1 !important;
+          visibility: visible !important;
+          display: block !important;
+        }
+
+        .bplayer-wrap.bplayer-hide-control .bplayer-controller-wrap,
+        .bplayer-wrap.bplayer-hide-control .bplayer-control-wrap,
+        .bplayer-wrap.bplayer-hide-control .bplayer-progress-wrap,
+        .bplayer-wrap.bplayer-hide-control .bplayer-controls,
+        .pv-video-player.pv-hide-control .pv-controls,
+        .pv-video-player.pv-hide-control .pv-progressbar,
+        .xgplayer.xgplayer-inactive .xgplayer-controls,
+        .video-js.vjs-user-inactive .vjs-control-bar {
+          opacity: 1 !important;
+          visibility: visible !important;
+          transform: none !important;
+        }
+      `;
+
+      const ensure = () => {
+        if (!style.isConnected) {
+          (document.head || document.documentElement || document.body).appendChild(style);
+        }
+      };
+
+      ensure();
+      new MutationObserver(ensure).observe(document.documentElement || document.body, {
+        childList: true,
+        subtree: true
+      });
+    }).catch(() => {});
+  }
+}
+
 async function clickVisiblePlayButton(page) {
   let clicked = false;
   for (const frame of page.frames()) {
@@ -633,6 +701,7 @@ async function startVideoPlayback(page, videoIndex) {
   learningSignal.lastCvRespDesc = '';
   learningSignal.lastVideoId = '';
 
+  await installPersistentPlayerControls(page);
   await installMuteGuard(page);
   await silenceMediaElements(page);
   await forcePlayerMutedUi(page);
@@ -846,6 +915,9 @@ function findFirstDeepValue(root, keyPattern) {
 }
 
 function extractAnswerPlan(api) {
+  const structured = extractStructuredAnswerPlan(api);
+  if (structured.length) return structured;
+
   const result = [];
   const seen = new WeakSet();
   const clean = value => String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -891,7 +963,51 @@ function extractAnswerPlan(api) {
   return unique;
 }
 
+function extractStructuredAnswerPlan(api) {
+  if (!api || typeof api !== 'object') return [];
+  const clean = value => String(value ?? '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const stems = api?.attribute?.data?.questionStemRPS;
+  if (!Array.isArray(stems)) return [];
+
+  const result = [];
+  for (const stem of stems) {
+    const questions = Array.isArray(stem?.listPaperQuestionRP) && stem.listPaperQuestionRP.length
+      ? stem.listPaperQuestionRP
+      : Array.isArray(stem?.paperQuestionRPS)
+        ? stem.paperQuestionRPS
+        : [];
+    for (const q of questions) {
+      const options = (q?.paperOptionRPS || []).map(o => ({
+        id: o?.paperOptionId || '',
+        text: clean(o?.context || o?.optionName || ''),
+        optionNo: o?.optionNo,
+        standardAnswer: o?.standardAnswer
+      }));
+      const hasAnswers = options.some(o => o.standardAnswer != null && o.standardAnswer !== '');
+      let correct = [];
+      if (hasAnswers) {
+        correct = options.filter(o => o.standardAnswer === 1 || o.standardAnswer === true || String(o.standardAnswer) === '1');
+      } else if (q?.type === 1) {
+        correct = options.filter(o => o.text === '对' || o.optionNo === 1);
+      } else if (q?.type === 3) {
+        correct = options;
+      } else {
+        correct = options.slice(0, 1);
+      }
+
+      if (correct.length) {
+        result.push({
+          text: clean(q?.questionName || ''),
+          correct: correct.map(o => ({ id: o.id, text: o.text }))
+        });
+      }
+    }
+  }
+  return result;
+}
+
 function buildFallbackAnswerPlan(api) {
+  return extractStructuredAnswerPlan(api);
   // Build answer plan from API data. The API has TWO representations:
   // - paperQuestionRPS: all standardAnswer=null (exam-taker view)
   // - listPaperQuestionRP: standardAnswer=1 for correct, 0 for wrong
@@ -1007,12 +1123,13 @@ async function runLearning(page) {
     if (checkStop()) { sendLog('停止: 用户中断学习', 'warn'); return; }
 
     await ensureLearningPage(page);
+    await switchToLearningInProgressTab(page);
     // Retry card loading — AngularJS might render cards asynchronously
     let allCards = [];
     let totalCourses = 0;
     let completedCourses = 0;
     for (let retry = 0; retry < 5; retry++) {
-      allCards = await page.locator('.col-xs-12.col-sm-12.col-md-6.col-lg-4').all();
+      allCards = await getLearningInProgressCards(page);
       totalCourses = allCards.length;
       if (totalCourses > 0) break;
       await sleep(1500);
@@ -1059,9 +1176,36 @@ async function ensureLearningPage(page) {
   await sleep(2000);
 }
 
+async function switchToLearningInProgressTab(page) {
+  const fixedTab = page.locator('a[href="#B3DC3CB4_C2CF_69F6_49A2_6EF8E11C6F98"]').first();
+  if (await fixedTab.count().catch(() => 0)) {
+    await fixedTab.click({ force: true }).catch(() => {});
+    await sleep(1200);
+    return;
+  }
+
+  const textTab = page.locator('a[data-toggle="tab"]').filter({ hasText: '学习中' }).first();
+  if (await textTab.count().catch(() => 0)) {
+    await textTab.click({ force: true }).catch(() => {});
+    await sleep(1200);
+  }
+}
+
+async function getLearningInProgressCards(page) {
+  const cards = await page.locator('.col-xs-12.col-sm-12.col-md-6.col-lg-4').all();
+  const visibleCards = [];
+  for (const card of cards) {
+    if (await card.isVisible().catch(() => false)) {
+      visibleCards.push(card);
+    }
+  }
+  return visibleCards;
+}
+
 async function findFirstIncompleteCourse(page) {
   for (let retry = 0; retry < 10; retry++) {
-    const cards = await page.locator('.col-xs-12.col-sm-12.col-md-6.col-lg-4').all();
+    await switchToLearningInProgressTab(page);
+    const cards = await getLearningInProgressCards(page);
     for (const card of cards) {
       const title = await textOf(card.locator('.item-tt-link').first());
       const progressText = await textOf(card.locator('.sr-only').first());
@@ -1122,6 +1266,7 @@ async function waitVideoDone(page, videoIndex) {
 
   while (Date.now() - startedAt < 6 * 60 * 60 * 1000) {
     if (checkStop()) { sendLog('Stop: user interrupted video playback', 'warn'); return; }
+    await installPersistentPlayerControls(page);
     await installMuteGuard(page);
     await silenceMediaElements(page);
     await forcePlayerMutedUi(page);
@@ -1390,7 +1535,7 @@ async function processPendingExams(page) {
       sendLog(`Submitting with ${completion.answered}/${answerPlan.length} answers (${pct}%) — some questions may be unanswered`);
     }
 
-    await submitCurrentExam(page);
+    await submitCurrentExamAnywhere(page);
     await sleep(2000);
     processedTitles.add(exam.title);
   }
@@ -1424,6 +1569,20 @@ async function getFirstEnterableExam(page, skipTitles) {
 }
 
 async function enterFormalExam(page) {
+  if (/\/exam\/detail/i.test(page.url())) {
+    const primaryButtons = await page.locator('button.btn.btn-primary, a.btn.btn-primary').all().catch(() => []);
+    for (const button of primaryButtons) {
+      if (!await button.isVisible().catch(() => false)) continue;
+      const label = await textOf(button);
+      if (label.includes('进入考试') || label.includes('开始考试') || label.includes('确认') || !label) {
+        sendLog('Clicking exam detail primary entry button...');
+        await button.click({ force: true }).catch(() => {});
+        await page.waitForLoadState('domcontentloaded').catch(() => {});
+        await sleep(3000);
+        break;
+      }
+    }
+  }
   // Step 1: Check for confirmation-page "进入考试" button
   const goButton = page.locator('.btn-primary[du-click="goExam"], button[du-click="goExam"], button:has-text("进入考试"), a:has-text("进入考试"), span:has-text("进入考试")').first();
   if (await goButton.count().catch(() => 0) && await goButton.isVisible().catch(() => false)) {
@@ -1441,7 +1600,8 @@ async function enterFormalExam(page) {
       return;
     }
     // Element-based detection
-    const hasExamContent = await page.evaluate(() => {
+    const optionsFrame = await getOptionsFrame(page);
+    const hasExamContent = await optionsFrame.evaluate(() => {
       const visible = el => {
         if (!el) return false;
         const r = el.getBoundingClientRect();
@@ -1478,9 +1638,52 @@ async function enterFormalExam(page) {
 async function waitForExamReady(page) {
   for (let retry = 0; retry < 60; retry++) {
     const url = page.url();
-    const hasPaperId = /paperId=|examId=|testId=|paper_id=|exam_id=|myExamRecordId=|\/exam\/start|\/exam\/do/i.test(url);
-    // Must have BOTH paperId URL AND rendered option elements
-    const state = await page.evaluate(() => {
+    let hasPaperId = /paperId=|examId=|testId=|paper_id=|exam_id=|myExamRecordId=|\/exam\/start|\/exam\/do/i.test(url);
+    const optionsFrame = await getOptionsFrame(page);
+    if (!hasPaperId && optionsFrame !== page) {
+      hasPaperId = /paperId=|examId=|testId=|paper_id=|exam_id=|myExamRecordId=|\/exam\/start|\/exam\/do/i.test(optionsFrame.url());
+    }
+    const state = await optionsFrame.evaluate(() => {
+      const visible = el => {
+        if (!el) return false;
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden';
+      };
+      const ulOptions = [...document.querySelectorAll('ul.options')].filter(visible);
+      const options = [...document.querySelectorAll('.questionDesc, .options, .option, input[type="radio"], input[type="checkbox"], ul.options, .exam-option, .paper-option, [class*="question"], [class*="option"]')].filter(visible);
+      const submit = [...document.querySelectorAll('#commit-answer, .btn-submit, span[du-click="onsubmit"], span[du-click*="submit"], button[du-click*="submit"], .submit-btn, [class*="submit"], [class*="commit"]')].find(visible);
+      const bodyText = document.body?.innerText || '';
+      const looksLikePaper =
+        bodyText.includes('试卷进度') ||
+        bodyText.includes('答题卡') ||
+        document.querySelectorAll('.questionDesc').length >= 2;
+      return { ulOptionsCount: ulOptions.length, options: options.length, hasSubmit: !!submit, looksLikePaper };
+    }).catch(() => ({ ulOptionsCount: 0, options: 0, hasSubmit: false, looksLikePaper: false }));
+    if (hasPaperId && state.options >= 2 && (state.hasSubmit || state.looksLikePaper)) {
+      sendLog(`Exam ready: options=${state.options} ulOptions=${state.ulOptionsCount} url=${url.slice(0, 80)}`);
+      return true;
+    }
+    if (hasPaperId && retry > 5) {
+      sendLog(`Exam waiting: retry=${retry} options=${state.options} ulOptions=${state.ulOptionsCount} hasSubmit=${state.hasSubmit} looksLikePaper=${state.looksLikePaper}`);
+    }
+    await sleep(1000);
+  }
+  try {
+    const diagUrl = page.url();
+    const diagText = await page.evaluate(() => (document.body?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 400)).catch(() => '');
+    sendLog(`Exam ready timeout: url=${diagUrl.slice(0, 100)} body="${diagText.slice(0, 200)}"`, 'warn');
+  } catch {}
+  return false;
+  for (let retry = 0; retry < 60; retry++) {
+    const url = page.url();
+    let hasPaperId = /paperId=|examId=|testId=|paper_id=|exam_id=|myExamRecordId=|\/exam\/start|\/exam\/do/i.test(url);
+    const optionsFrame = await getOptionsFrame(page);
+    if (!hasPaperId && optionsFrame !== page) {
+      hasPaperId = /paperId=|examId=|testId=|paper_id=|exam_id=|myExamRecordId=|\/exam\/start|\/exam\/do/i.test(optionsFrame.url());
+    }
+    // Must have BOTH paperId URL/frame URL AND rendered option elements
+    const state = await optionsFrame.evaluate(() => {
       const visible = el => {
         if (!el) return false;
         const r = el.getBoundingClientRect();
@@ -1512,21 +1715,50 @@ async function waitForExamReady(page) {
   return false;
 }
 
+async function getExamContext(page) {
+  const mainUrl = page.url();
+  const optionsFrame = await getOptionsFrame(page);
+  const frameUrl = optionsFrame !== page ? optionsFrame.url() : '';
+  const frameParsed = frameUrl ? new URL(frameUrl) : null;
+  const mainParsed = new URL(mainUrl);
+  const paperId = mainParsed.searchParams.get('paperId')
+    || mainParsed.searchParams.get('paper_id')
+    || frameParsed?.searchParams.get('paperId')
+    || frameParsed?.searchParams.get('paper_id')
+    || null;
+  const myExamRecordId = mainParsed.searchParams.get('myExamRecordId')
+    || frameParsed?.searchParams.get('myExamRecordId')
+    || null;
+  const examId = mainParsed.searchParams.get('examId')
+    || mainParsed.searchParams.get('exam_id')
+    || frameParsed?.searchParams.get('examId')
+    || frameParsed?.searchParams.get('exam_id')
+    || null;
+  const testId = mainParsed.searchParams.get('testId')
+    || frameParsed?.searchParams.get('testId')
+    || null;
+  const urlForApi = frameUrl || mainUrl;
+  return { mainUrl, frameUrl, urlForApi, paperId, myExamRecordId, examId, testId, optionsFrame };
+}
+
 async function waitForExamApiData(page) {
-  const parsed = new URL(page.url());
-  const myExamRecordId = parsed.searchParams.get('myExamRecordId');
-  const paperId = parsed.searchParams.get('paperId');
+  const ctx = await getExamContext(page);
+  const { paperId, myExamRecordId, examId, testId, mainUrl, frameUrl } = ctx;
+  const hasExamUrl = /paperId=|examId=|testId=|paper_id=|exam_id=|myExamRecordId=|\/exam\/start|\/exam\/do/i.test(`${mainUrl} ${frameUrl}`);
   for (let retry = 0; retry < 90; retry++) {
-    // Fast path: if URL has exam identifiers AND cache has data
-    const hasExamUrl = /paperId=|myExamRecordId=|\/exam\/start|\/exam\/do/i.test(page.url());
     const found = examResponseCache.some(item =>
       item.json != null && item.answerPlanSize > 0 && (
         (paperId && item.paperId === paperId) ||
         (myExamRecordId && (item.myExamRecordId === myExamRecordId || (item.url || '').includes(myExamRecordId))) ||
+        (examId && (item.url || '').includes(examId)) ||
+        (testId && (item.url || '').includes(testId)) ||
         (/start-do-paper-or-test|paper-info|get-paper/i.test(item.url || '') && hasExamUrl)
       )
     );
     if (found) return true;
+    if (retry === 10 || retry === 30 || retry === 60) {
+      sendLog(`Exam API waiting: retry=${retry} paperId=${paperId || '-'} record=${myExamRecordId || '-'} examId=${examId || '-'} testId=${testId || '-'} mainUrl=${mainUrl.slice(0, 80)} frameUrl=${frameUrl.slice(0, 80)}`);
+    }
     await sleep(1000);
   }
   return false;
@@ -1535,10 +1767,11 @@ async function waitForExamApiData(page) {
 async function captureCurrentExam(page) {
   const EXAM_CAPTURE_DIR = path.join(process.cwd(), 'exam-captures');
   await fs.mkdir(EXAM_CAPTURE_DIR, { recursive: true });
-  const currentUrl = page.url();
+  const ctx = await getExamContext(page);
+  const currentUrl = ctx.urlForApi;
   const parsed = new URL(currentUrl);
-  let paperId = parsed.searchParams.get('paperId');
-  const myExamRecordId = parsed.searchParams.get('myExamRecordId');
+  let paperId = ctx.paperId;
+  const myExamRecordId = ctx.myExamRecordId;
   let apiUrl = '';
   let api = null;
   let apiError = null;
@@ -1617,7 +1850,8 @@ async function captureCurrentExam(page) {
 }
 
 async function readExamDomQuestions(page) {
-  return page.evaluate(() => {
+  const optionsFrame = await getOptionsFrame(page);
+  return optionsFrame.evaluate(() => {
     const clean = value => String(value || '').replace(/\s+/g, ' ').trim();
     const allOpts = [...document.querySelectorAll('ul.options')];
     return allOpts.map((optionsUL, index) => {
@@ -1922,6 +2156,75 @@ function configure(opts) {
 
 function stop() {
   stopRequested = true;
+}
+
+async function submitCurrentExamAnywhere(page) {
+  const stableSelectors = '#commit-answer, .btn-submit, span[du-click="onsubmit"], span[du-click*="submit"], button[du-click*="submit"], .submit-btn, [class*="submit"], [class*="commit"]';
+  for (const frame of page.frames()) {
+    const submit = frame.locator(stableSelectors).first();
+    if (!(await submit.count().catch(() => 0))) continue;
+
+    sendLog(`Submitting answers${frame === page.mainFrame() ? '' : ' (sub-frame)'}`);
+    await submit.click({ timeout: 5000, force: true }).catch(() => {});
+    await submit.evaluate(el => {
+      const r = el.getBoundingClientRect();
+      for (const type of ['mouseover', 'mousedown', 'mouseup', 'click']) {
+        el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+      }
+    }).catch(() => {});
+    await sleep(1500);
+
+    const confirmCandidates = await page.locator('#confirm_confirm, .layui-layer-btn0, .modal button.btn.btn-primary, button.btn.btn-primary').all().catch(() => []);
+    let confirmed = false;
+    for (const button of confirmCandidates) {
+      if (!await button.isVisible().catch(() => false)) continue;
+      const label = await textOf(button);
+      const id = await button.getAttribute('id').catch(() => '');
+      if (id === 'confirm_confirm' || label.includes('确定') || label.includes('确认') || label.includes('提交')) {
+        sendLog('Confirm dialog found, clicking confirm');
+        await button.click({ timeout: 3000, force: true }).catch(() => {});
+        confirmed = true;
+        break;
+      }
+    }
+    if (!confirmed) sendLog('No confirm dialog detected');
+
+    await page.waitForLoadState('domcontentloaded').catch(() => {});
+    await sleep(2500);
+    return;
+  }
+
+  sendLog('Submit button not found');
+  return;
+  const selectors = '#commit-answer, .btn-submit, button:has-text("鎻愪氦绛旀"), span:has-text("鎻愪氦绛旀"), span[du-click*="submit"], button[du-click*="submit"], button:has-text("鎻愪氦"), button:has-text("浜ゅ嵎"), .submit-btn, [class*="submit"]';
+  for (const frame of page.frames()) {
+    const submit = frame.locator(selectors).first();
+    if (!(await submit.count().catch(() => 0))) continue;
+
+    sendLog(`Submitting answers${frame === page.mainFrame() ? '' : ' (sub-frame)'}`);
+    await submit.click({ timeout: 5000, force: true }).catch(() => {});
+    await submit.evaluate(el => {
+      const r = el.getBoundingClientRect();
+      for (const type of ['mouseover', 'mousedown', 'mouseup', 'click']) {
+        el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+      }
+    }).catch(() => {});
+    await sleep(1500);
+
+    const confirm = page.locator('.modal button:has-text("纭畾"), .modal button:has-text("纭"), button:has-text("纭畾"), button:has-text("纭"), .layui-layer-btn0, [class*="layer"]:has-text("纭畾"), .dialog-confirm:has-text("纭畾"), .dialog button:has-text("纭?), .layui-layer-dialog .layui-layer-btn0').first();
+    if (await confirm.count().catch(() => 0)) {
+      sendLog('Confirm dialog found, clicking confirm');
+      await confirm.click({ timeout: 3000, force: true }).catch(() => {});
+    } else {
+      sendLog('No confirm dialog detected');
+    }
+
+    await page.waitForLoadState('domcontentloaded').catch(() => {});
+    await sleep(2500);
+    return;
+  }
+
+  sendLog('Submit button not found');
 }
 
 function getState() {
