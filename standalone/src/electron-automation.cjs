@@ -1655,8 +1655,8 @@ async function waitForExamReady(page) {
       const submit = [...document.querySelectorAll('#commit-answer, .btn-submit, span[du-click="onsubmit"], span[du-click*="submit"], button[du-click*="submit"], .submit-btn, [class*="submit"], [class*="commit"]')].find(visible);
       const bodyText = document.body?.innerText || '';
       const looksLikePaper =
-        bodyText.includes('试卷进度') ||
-        bodyText.includes('答题卡') ||
+        bodyText.includes('\u8bd5\u5377\u8fdb\u5ea6') ||
+        bodyText.includes('\u7b54\u9898\u5361') ||
         document.querySelectorAll('.questionDesc').length >= 2;
       return { ulOptionsCount: ulOptions.length, options: options.length, hasSubmit: !!submit, looksLikePaper };
     }).catch(() => ({ ulOptionsCount: 0, options: 0, hasSubmit: false, looksLikePaper: false }));
@@ -1669,44 +1669,6 @@ async function waitForExamReady(page) {
     }
     await sleep(1000);
   }
-  try {
-    const diagUrl = page.url();
-    const diagText = await page.evaluate(() => (document.body?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 400)).catch(() => '');
-    sendLog(`Exam ready timeout: url=${diagUrl.slice(0, 100)} body="${diagText.slice(0, 200)}"`, 'warn');
-  } catch {}
-  return false;
-  for (let retry = 0; retry < 60; retry++) {
-    const url = page.url();
-    let hasPaperId = /paperId=|examId=|testId=|paper_id=|exam_id=|myExamRecordId=|\/exam\/start|\/exam\/do/i.test(url);
-    const optionsFrame = await getOptionsFrame(page);
-    if (!hasPaperId && optionsFrame !== page) {
-      hasPaperId = /paperId=|examId=|testId=|paper_id=|exam_id=|myExamRecordId=|\/exam\/start|\/exam\/do/i.test(optionsFrame.url());
-    }
-    // Must have BOTH paperId URL/frame URL AND rendered option elements
-    const state = await optionsFrame.evaluate(() => {
-      const visible = el => {
-        if (!el) return false;
-        const r = el.getBoundingClientRect();
-        const cs = getComputedStyle(el);
-        return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden';
-      };
-      const ulOptions = [...document.querySelectorAll('ul.options')].filter(visible);
-      const options = [...document.querySelectorAll('.questionDesc, .options, .option, input[type="radio"], input[type="checkbox"], ul.options, .exam-option, .paper-option, [class*="question"], [class*="option"]')].filter(visible);
-      const submit = document.querySelector('#commit-answer, .btn-submit, span[du-click="onsubmit"], button[du-click*="submit"], button:has-text("提交"), button:has-text("交卷"), .submit-btn, [class*="submit"], [class*="commit"]');
-      const bodyText = document.body?.innerText || '';
-      const looksLikePaper = /试卷进度|答题卡|判断题|单选题|多选题|提交答案|提交试卷|交卷|剩余时间|考试时间/i.test(bodyText);
-      return { ulOptionsCount: ulOptions.length, options: options.length, hasSubmit: !!submit, looksLikePaper };
-    }).catch(() => ({ ulOptionsCount: 0, options: 0, hasSubmit: false, looksLikePaper: false }));
-    if (hasPaperId && state.options >= 2 && (state.hasSubmit || state.looksLikePaper)) {
-      sendLog(`Exam ready: options=${state.options} ulOptions=${state.ulOptionsCount} url=${url.slice(0, 80)}`);
-      return true;
-    }
-    if (hasPaperId && retry > 5) {
-      sendLog(`Exam waiting: retry=${retry} options=${state.options} ulOptions=${state.ulOptionsCount} hasSubmit=${state.hasSubmit} looksLikePaper=${state.looksLikePaper}`);
-    }
-    await sleep(1000);
-  }
-  // Diagnostic on failure
   try {
     const diagUrl = page.url();
     const diagText = await page.evaluate(() => (document.body?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 400)).catch(() => '');
@@ -2188,36 +2150,6 @@ async function submitCurrentExamAnywhere(page) {
       }
     }
     if (!confirmed) sendLog('No confirm dialog detected');
-
-    await page.waitForLoadState('domcontentloaded').catch(() => {});
-    await sleep(2500);
-    return;
-  }
-
-  sendLog('Submit button not found');
-  return;
-  const selectors = '#commit-answer, .btn-submit, button:has-text("鎻愪氦绛旀"), span:has-text("鎻愪氦绛旀"), span[du-click*="submit"], button[du-click*="submit"], button:has-text("鎻愪氦"), button:has-text("浜ゅ嵎"), .submit-btn, [class*="submit"]';
-  for (const frame of page.frames()) {
-    const submit = frame.locator(selectors).first();
-    if (!(await submit.count().catch(() => 0))) continue;
-
-    sendLog(`Submitting answers${frame === page.mainFrame() ? '' : ' (sub-frame)'}`);
-    await submit.click({ timeout: 5000, force: true }).catch(() => {});
-    await submit.evaluate(el => {
-      const r = el.getBoundingClientRect();
-      for (const type of ['mouseover', 'mousedown', 'mouseup', 'click']) {
-        el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
-      }
-    }).catch(() => {});
-    await sleep(1500);
-
-    const confirm = page.locator('.modal button:has-text("纭畾"), .modal button:has-text("纭"), button:has-text("纭畾"), button:has-text("纭"), .layui-layer-btn0, [class*="layer"]:has-text("纭畾"), .dialog-confirm:has-text("纭畾"), .dialog button:has-text("纭?), .layui-layer-dialog .layui-layer-btn0').first();
-    if (await confirm.count().catch(() => 0)) {
-      sendLog('Confirm dialog found, clicking confirm');
-      await confirm.click({ timeout: 3000, force: true }).catch(() => {});
-    } else {
-      sendLog('No confirm dialog detected');
-    }
 
     await page.waitForLoadState('domcontentloaded').catch(() => {});
     await sleep(2500);
